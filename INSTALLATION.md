@@ -33,7 +33,7 @@ python --version
    # Should show: ...\venv\Scripts\python.exe
    
    # Then install:
-   pip install streamlit google-generativeai langchain langchain-openai langgraph python-dotenv openpyxl pandas requests jira azure-devops sqlalchemy python-dateutil tiktoken plotly pydantic
+   pip install streamlit google-generativeai langchain langgraph python-dotenv openpyxl pandas requests jira azure-devops sqlalchemy python-dateutil tiktoken plotly pydantic
    ```
 
 4. **Configure API key**
@@ -118,8 +118,8 @@ python --version
 
 **Speed up demo:**
 ```env
-# Use GPT-3.5 for faster (cheaper) results
-LLM_MODEL=gpt-3.5-turbo
+# Use Gemini Flash for faster results
+LLM_MODEL=gemini-2.0-flash-exp
 ```
 
 **Warm up the system:**
@@ -144,6 +144,7 @@ python -c "from agents import AgentOrchestrator; import streamlit"
    git init
    git add .
    git commit -m "Initial commit - Ticket-to-Test AI"
+   git branch -M main
    git remote add origin https://github.com/your-username/ticket-to-test-ai.git
    git push -u origin main
    ```
@@ -159,8 +160,8 @@ python -c "from agents import AgentOrchestrator; import streamlit"
 3. **Configure Secrets**
    In Streamlit Cloud dashboard, add:
    ```toml
-   OPENAI_API_KEY = "sk-your-key-here"
-   LLM_MODEL = "gpt-4-turbo-preview"
+   GOOGLE_API_KEY = "your-gemini-api-key-here"
+   LLM_MODEL = "gemini-3-flash-preview"
    ```
 
 ---
@@ -174,7 +175,7 @@ Get-Command python | Select-Object Source
 # Should show path inside venv folder
 
 # Reinstall dependencies
-pip install streamlit openai langchain langchain-openai langgraph python-dotenv openpyxl pandas requests jira azure-devops sqlalchemy python-dateutil tiktoken plotly pydantic --force-reinstall
+pip install streamlit google-generativeai langchain langgraph python-dotenv openpyxl pandas requests jira azure-devops sqlalchemy python-dateutil tiktoken plotly pydantic --force-reinstall
 ```
 ### "Streamlit won't start"
 ```powershell
@@ -186,9 +187,9 @@ python -m streamlit run app.py
 ```
 
 ### "Agents take too long"
-- Switch to `gpt-3.5-turbo` in .env (10x faster)
+- Switch to `gemini-2.0-flash-exp` in .env (faster model)
 - Check internet connection speed
-- Verify OpenAI service status
+- Verify Google AI service status
 
 ### "Excel file won't download"
 ```powershell
@@ -224,7 +225,7 @@ UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14
 - [ ] Virtual environment activated
 - [ ] All dependencies installed (`pip list`)
 - [ ] `.env` file configured with valid API key
-- [ ] OpenAI account has sufficient credits ($5+ recommended)
+- [ ] Google AI account has API access enabled
 - [ ] Run full system test: `python test_system.py`
 - [ ] Streamlit app tested and running
 - [ ] Sample tickets load correctly
@@ -318,18 +319,18 @@ UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14
 ## Cost Estimation
 
 ### Development/Demo
-- **GPT-4:** $0.08 per ticket
-- **GPT-3.5:** $0.008 per ticket
-- **Demo costs:** ~$2-5 for full testing
+- **Gemini Pro:** $0.05 per ticket
+- **Gemini Flash:** $0.005 per ticket
+- **Demo costs:** Free tier available (60 requests/min)
 
 ### Production Scale
-- **200 tickets/month:** $16/month (GPT-4) or $1.60/month (GPT-3.5)
-- **1000 tickets/month:** $80/month (GPT-4) or $8/month (GPT-3.5)
+- **200 tickets/month:** ~$10/month (Gemini Pro) or ~$1/month (Gemini Flash)
+- **1000 tickets/month:** ~$50/month (Gemini Pro) or ~$5/month (Gemini Flash)
 
 **ROI Comparison:**
-- Cost: $80/month
+- Cost: ~$50/month
 - Savings: $6,250/sprint (for 5-person QA team)
-- **Net benefit: $6,170/sprint**
+- **Net benefit: $6,200/sprint**
 
 ---
 
@@ -337,7 +338,7 @@ UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14
 
 ### Documentation
 - LangGraph: https://langchain-ai.github.io/langgraph/
-- OpenAI API: https://platform.openai.com/docs
+- Google AI API: https://ai.google.dev/docs
 - Streamlit: https://docs.streamlit.io
 
 ### Community

@@ -166,7 +166,7 @@ Jira/ADO Ticket → 6 AI Agents → Complete QA Roadmap + Test Cases
 ├─────────────────────────────────┤
 │  LangGraph Agent Orchestrator   │
 ├─────────────────────────────────┤
-│ 6 Specialized Agents (GPT-4)    │
+│ 6 Specialized Agents (Gemini)  │
 ├─────────────────────────────────┤
 │  Integration Layer (Jira/ADO)   │
 ├─────────────────────────────────┤
@@ -362,7 +362,7 @@ ROI:             6,671%
 > A: Three differentiators: 1) True agentic behavior (6 specialized agents), 2) Complete workflow (ticket to Excel to sync-back), 3) Built for QA acceptance testing, not just unit tests.
 
 **Q: Cost to run?**
-> A: About $0.08 per ticket with GPT-4, or $0.008 with GPT-3.5. For 200 tickets/month, that's ~$16 in API costs. Compare to $6,000+ in labor savings.
+> A: About $0.05 per ticket with Gemini Pro, or $0.005 with Gemini Flash. For 200 tickets/month, that's ~$10 in API costs. Compare to $6,000+ in labor savings.
 
 **Q: Can junior QAs use this?**
 > A: Perfect for juniors! It's a learning tool - they see how comprehensive test cases should be structured and what edge cases to consider. They review and approve, building skills.
@@ -438,7 +438,7 @@ ROI:             6,671%
 - **Defect reduction:** -40% leakage
 - **Test cases per ticket:** 25-40 average
 - **Processing time:** 15-20 seconds
-- **Cost per ticket:** $0.08 (GPT-4)
+- **Cost per ticket:** $0.05 (Gemini Pro)
 - **ROI:** 6,671%
 - **Market size:** 5M QA engineers
 

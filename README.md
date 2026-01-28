@@ -174,7 +174,7 @@ Open http://localhost:8501 in your browser.
 6. Sync results back to ticket
 
 **Tips:**
-- Use GPT-3.5-turbo for faster/cheaper demo (change in .env)
+- Use `gemini-2.0-flash-exp` for faster demo (change in .env)
 - Live integration requires Jira/ADO credentials
 
 ---
@@ -360,13 +360,13 @@ jira.create_test_subtasks("PROJ-123", test_cases)
 ## 💰 Cost Analysis
 
 ### Development/Demo
-- **GPT-4:** ~$0.08 per ticket
-- **GPT-3.5:** ~$0.008 per ticket  
-- **Demo budget:** $5 = 60+ tickets with GPT-4
+- **Gemini Pro:** ~$0.05 per ticket
+- **Gemini Flash:** ~$0.005 per ticket  
+- **Demo budget:** Free tier available (60 requests/min)
 
 ### Production Scale
-- **200 tickets/month:** $16/month (GPT-4)
-- **1000 tickets/month:** $80/month (GPT-4)
+- **200 tickets/month:** ~$10/month (Gemini Pro)
+- **1000 tickets/month:** ~$50/month (Gemini Pro)
 
 **vs. Manual Cost:** $6,250/sprint in QA labor
 
@@ -400,15 +400,9 @@ For hackathon judges and future contributors:
 
 ---
 
-## 📄 License
-
-MIT License - See LICENSE file for details
-
----
-
 ## 🙏 Acknowledgments
 
-Built for the **[Hackathon Name]** Agentic AI challenge.
+Built for the **Veersa** Agentic AI Hackathon.
 
 **Tech Stack Credits:**
 - LangGraph (LangChain team)
@@ -419,9 +413,9 @@ Built for the **[Hackathon Name]** Agentic AI challenge.
 
 ## 📞 Contact
 
-**Team:** [Your Team Name]  
+**Team:** QualityOps
 **Demo:** http://localhost:8501 (after setup)  
-**Repository:** [Your GitHub Repo]
+**Repository:** https://github.com/sahilchauhan0603/TicketToTest_AI
 
 ---
 
