@@ -51,8 +51,8 @@ st.markdown("""
         color: #5f6368;
         font-size: 1rem;
         font-weight: 400;
-        margin-bottom: 1.5rem;
-        line-height: 1.5;
+        margin-bottom: 0rem;
+        line-height: 0.5;
     }
     
     /* Dark Theme Overrides */
@@ -341,6 +341,11 @@ def display_header():
     st.markdown('<p class="main-header">Ticket-to-Test AI Platform</p>', unsafe_allow_html=True)
     st.markdown('<p class="sub-header">AI-Powered Test Case Generation & Quality Assurance Automation</p>', unsafe_allow_html=True)
     
+    # Feature highlights section
+    st.markdown("---")
+    st.markdown("### 🎯 Platform Capabilities")
+    st.caption("Transform tickets into comprehensive test suites with intelligent AI agents")
+    
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.markdown("**📋 QA Roadmap**")
@@ -452,16 +457,31 @@ def display_ticket_input():
                 st.markdown(f"**Attachments:** {len(ticket['attachments'])}")
                 st.markdown(f"**Comments:** {len(ticket['comments'])}")
             
-            st.markdown("**Title:**")
+            st.markdown("<p style='font-weight: 600; text-decoration: underline;'>Title:</p>", unsafe_allow_html=True)
             st.info(ticket['title'])
             
-            st.markdown("**Description:**")
+            st.markdown("<p style='font-weight: 600; text-decoration: underline;'>Description:</p>", unsafe_allow_html=True)
             st.text_area("", ticket['description'], height=150, disabled=True, label_visibility="collapsed", key="sample_desc")
             
             if ticket['acceptance_criteria']:
-                st.markdown("**Acceptance Criteria:**")
+                st.markdown("<p style='font-weight: 600; text-decoration: underline;'>Acceptance Criteria:</p>", unsafe_allow_html=True)
                 for ac in ticket['acceptance_criteria']:
                     st.markdown(f"- {ac}")
+            
+            # Display attachments if any
+            if ticket['attachments']:
+                st.markdown("<p style='font-weight: 600; text-decoration: underline;'>Attachments:</p>", unsafe_allow_html=True)
+                for attachment in ticket['attachments']:
+                    st.markdown(f"📎 {attachment}")
+            
+            # Display comments if any
+            if ticket['comments']:
+                st.markdown("<p style='font-weight: 600; text-decoration: underline;'>Comments:</p>", unsafe_allow_html=True)
+                for comment in ticket['comments']:
+                    with st.container():
+                        st.markdown(f"**{comment['author']}:**")
+                        st.markdown(f"> {comment['body']}")
+                        st.markdown("")
         
         # Store ticket for this tab
         st.session_state.selected_ticket = ticket
