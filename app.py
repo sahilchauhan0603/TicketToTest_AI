@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import time
 from pathlib import Path
 import json
+import google.generativeai as genai
 
 from agents.orchestrator import AgentOrchestrator
 from agents.state import TicketInfo
@@ -397,7 +398,7 @@ def display_sidebar():
         # Processing Pipeline
         st.markdown("""
         <div class='pipeline-box'>
-            <div class='pipeline-title'>Processing Pipeline</div>
+            <div class='pipeline-title'>Processing Pipeline - 5-step workflow that the AI agents follows</div>
             <div class='pipeline-item'>
                 <div>1. Ticket Analysis</div>
                 <div>2. Context Building</div>
@@ -408,13 +409,89 @@ def display_sidebar():
         </div>
         """, unsafe_allow_html=True)
         
-        # Performance Metrics
-        st.markdown("**Performance Metrics**")
+        # Session Statistics
+        st.markdown("**Session Statistics**")
         col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Efficiency", "40-70%", help="Time reduction vs manual")
-        with col2:
-            st.metric("Coverage", "+30%", help="Additional test coverage")
+        
+        # Calculate real metrics from session state
+        if st.session_state.final_state:
+            num_test_cases = len(st.session_state.final_state.get('test_cases', []))
+            processing_time = st.session_state.final_state.get('processing_time', 0)
+            
+            with col1:
+                st.metric("Test Cases", num_test_cases, help="Total test cases generated")
+            with col2:
+                st.metric("Time", f"{processing_time:.1f}s", help="Processing time")
+        else:
+            with col1:
+                st.metric("Test Cases", "-", help="No session active")
+            with col2:
+                st.metric("Time", "-", help="No session active")
+
+
+def generate_ticket_details(title: str, ticket_type: str) -> dict:
+    """
+    Generate description and acceptance criteria using AI based on title
+    
+    Args:
+        title: The ticket title
+        ticket_type: Type of ticket (bug, story, task)
+    
+    Returns:
+        Dictionary with 'description' and 'acceptance_criteria' keys
+    """
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        return None
+    
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(os.getenv("LLM_MODEL", "gemini-2.0-flash-exp"))
+        
+        prompt = f"""You are a technical product manager. Given a ticket title and type, generate a detailed description and acceptance criteria.
+
+Ticket Type: {ticket_type}
+Ticket Title: {title}
+
+Generate:
+1. A detailed description (2-3 paragraphs) that includes:
+   - What needs to be done
+   - Context and background
+   - Technical considerations (if applicable)
+   - Expected behavior
+
+2. 4-6 clear and testable acceptance criteria
+
+Format your response as JSON:
+{{
+    "description": "detailed description here",
+    "acceptance_criteria": [
+        "criterion 1",
+        "criterion 2",
+        "criterion 3"
+    ]
+}}
+
+Keep it professional and specific to the ticket type."""
+
+        response = model.generate_content(prompt)
+        
+        # Extract JSON from response
+        response_text = response.text.strip()
+        # Remove markdown code blocks if present
+        if response_text.startswith("```json"):
+            response_text = response_text[7:]
+        if response_text.startswith("```"):
+            response_text = response_text[3:]
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+        
+        result = json.loads(response_text.strip())
+        return result
+    
+    except Exception as e:
+        st.error(f"Error generating details: {str(e)}")
+        return None
 
 
 def display_ticket_input():
@@ -596,6 +673,12 @@ def display_ticket_input():
     with tab3:
         st.markdown("**Enter your own ticket details:**")
         
+        # Initialize session state for AI-generated content
+        if 'ai_description' not in st.session_state:
+            st.session_state.ai_description = ""
+        if 'ai_acceptance_criteria' not in st.session_state:
+            st.session_state.ai_acceptance_criteria = ""
+        
         col1, col2 = st.columns(2)
         with col1:
             ticket_id = st.text_input("Ticket ID", value="CUSTOM-001", key="custom_ticket_id")
@@ -606,17 +689,39 @@ def display_ticket_input():
             title = st.text_input("Title", placeholder="Enter ticket title...", key="custom_title")
             status = st.selectbox("Status", ["To Do", "In Progress", "In Review"], key="custom_status")
         
+        # AI Generation Feature
+        if title:
+            col_btn1, col_btn2 = st.columns([3, 1])
+            with col_btn2:
+                if st.button("✨ AI Generate", type="secondary", help="Auto-generate description and acceptance criteria using AI"):
+                    if not os.getenv("GOOGLE_API_KEY"):
+                        st.error("⚠️ Please enter your Google Gemini API key in the sidebar.")
+                    else:
+                        with st.spinner("🤖 AI is generating ticket details..."):
+                            result = generate_ticket_details(title, ticket_type)
+                            if result:
+                                st.session_state.ai_description = result.get('description', '')
+                                st.session_state.ai_acceptance_criteria = '\n'.join(result.get('acceptance_criteria', []))
+                                st.success("✅ Details generated! You can edit them below.")
+                                st.rerun()
+        
+        # Use AI-generated content if available, otherwise empty
+        description_value = st.session_state.ai_description if st.session_state.ai_description else ""
+        ac_value = st.session_state.ai_acceptance_criteria if st.session_state.ai_acceptance_criteria else ""
+        
         description = st.text_area(
             "Description", 
+            value=description_value,
             height=150, 
-            placeholder="Describe the ticket in detail...\n\nInclude:\n- What needs to be done\n- Expected behavior\n- Any technical details",
+            placeholder="Describe the ticket in detail...\n\nInclude:\n- What needs to be done\n- Expected behavior\n- Any technical details\n\n💡 Tip: Enter a title and click 'AI Generate' to auto-fill this field!",
             key="custom_description"
         )
         
         ac_input = st.text_area(
             "Acceptance Criteria (one per line)",
+            value=ac_value,
             height=100,
-            placeholder="Given a user is logged in\nWhen they click the submit button\nThen the form should be saved",
+            placeholder="Given a user is logged in\nWhen they click the submit button\nThen the form should be saved\n\n💡 Tip: Use 'AI Generate' button above to auto-fill!",
             help="Enter each acceptance criterion on a new line",
             key="custom_ac"
         )
