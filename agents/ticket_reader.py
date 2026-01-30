@@ -2,10 +2,13 @@
 Ticket Reader Agent
 Extracts key requirements, acceptance criteria, and metadata from tickets
 """
-from typing import Dict, List
+from typing import Dict, List, Optional
 import json
 import google.generativeai as genai
 from agents.state import AgentState, log_agent_action
+from utils.rate_limiter import RateLimiter
+from utils.api_cache import APICache
+from utils.api_helper import call_gemini_with_retry
 import os
 
 
@@ -14,9 +17,11 @@ class TicketReaderAgent:
     Agent responsible for understanding the ticket and extracting structured information
     """
     
-    def __init__(self, llm_client):
+    def __init__(self, llm_client, rate_limiter: Optional[RateLimiter] = None, api_cache: Optional[APICache] = None):
         self.llm = llm_client
         self.name = "TicketReaderAgent"
+        self.rate_limiter = rate_limiter
+        self.api_cache = api_cache
     
     def process(self, state: AgentState) -> AgentState:
         """
@@ -28,22 +33,43 @@ class TicketReaderAgent:
         
         # Build prompt for extraction
         prompt = self._build_extraction_prompt(ticket)
+        model_name = os.getenv("LLM_MODEL", "gemini-2.0-flash-exp")
         
-        # Call Gemini with structured output
-        model = self.llm.GenerativeModel(
-            model_name=os.getenv("LLM_MODEL", "gemini-2.0-flash-exp")
-        )
+        # Check cache first
+        config = {
+            "temperature": float(os.getenv("LLM_TEMPERATURE", "0.3")),
+            "response_mime_type": "application/json"
+        }
+        
         full_prompt = f"{self._get_system_prompt()}\n\n{prompt}"
-        response = model.generate_content(
-            full_prompt,
-            generation_config=genai.types.GenerationConfig(
-                temperature=float(os.getenv("LLM_TEMPERATURE", "0.3")),
-                response_mime_type="application/json"
-            )
-        )
+        cached_response = None
         
-        # Parse response
-        result = json.loads(response.text)
+        if self.api_cache:
+            cached_response = self.api_cache.get(full_prompt, model_name, config)
+        
+        if cached_response:
+            # Use cached response
+            result = json.loads(cached_response)
+        else:
+            # Wait for rate limit if needed
+            if self.rate_limiter:
+                self.rate_limiter.wait_if_needed()
+            
+            # Call Gemini with retry logic
+            model = self.llm.GenerativeModel(model_name=model_name)
+            response_text = call_gemini_with_retry(
+                model,
+                full_prompt,
+                config,
+                max_retries=3
+            )
+            
+            # Cache the response
+            if self.api_cache:
+                self.api_cache.set(full_prompt, model_name, config, response_text)
+            
+            # Parse response
+            result = json.loads(response_text)
         
         # Update state
         state["extracted_requirements"] = result.get("requirements", [])

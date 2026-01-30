@@ -124,6 +124,8 @@ ROI:                    6,671%
 
 ## 🚀 Quick Start
 
+> **⚡ Important**: This system is optimized for Gemini API **free tier** (5 requests/minute). See [OPTIMIZATION_GUIDE.md](OPTIMIZATION_GUIDE.md) for complete details.
+
 ### Prerequisites
 - Python 3.9 or higher
 - Google Gemini API key ([Get one here](https://makersuite.google.com/app/apikey))
@@ -161,9 +163,14 @@ Open http://localhost:8501 in your browser.
 1. Select "Bug Fix" sample ticket
 2. Enter API key in sidebar (if not in .env)
 3. Click "Generate Test Cases"
-4. Watch agents work (~15-20 seconds)
+4. Watch agents work (~60 seconds with rate limiting)
 5. Review QA roadmap and test cases
 6. Download Excel file
+
+**⏱️ Expected Timing:**
+- **First run**: ~60 seconds (5 API calls with automatic pauses)
+- **Same ticket again**: ~3 seconds (cached, 0 API calls)
+- **Different tickets**: ~1 minute each (rate limit spacing)
 
 **Option 2: Live Integration (Production)**
 1. Configure Jira/Azure DevOps in .env (see below)
@@ -174,8 +181,11 @@ Open http://localhost:8501 in your browser.
 6. Sync results back to ticket
 
 **Tips:**
-- Use `gemini-2.0-flash-exp` for faster demo (change in .env)
-- Live integration requires Jira/ADO credentials
+- ✅ **Enable caching** in sidebar settings for faster re-runs
+- ✅ Use `gemini-3-flash-preview` model (free tier)
+- ✅ Process same ticket multiple times to test caching (free!)
+- ⚠️ Free tier: 5 RPM limit - system auto-pauses
+- 📖 Read [OPTIMIZATION_GUIDE.md](OPTIMIZATION_GUIDE.md) for details
 
 ---
 

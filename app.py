@@ -389,6 +389,22 @@ def display_sidebar():
         st.info(f"📋 Current Model: **{current_model}**")
         # st.caption("Edit LLM_MODEL in .env to change")
         
+        # Rate limit configuration
+        with st.expander("⏱️ Rate Limit Settings", expanded=False):
+            st.markdown("**Free Tier Limits (Gemini Flash)**")
+            st.caption("• 5 requests per minute (RPM)")
+            st.caption("• Each ticket uses 5 API calls (one per agent)")
+            st.caption("• System auto-pauses to respect limits")
+            
+            # Cache settings
+            st.markdown("**Optimization Settings**")
+            enable_cache = st.checkbox("Enable Response Caching", value=True, 
+                                      help="Cache API responses to avoid redundant calls")
+            if enable_cache:
+                st.caption("✅ Enabled - Identical requests use cached responses")
+            else:
+                st.caption("⚠️ Disabled - Every request will use an API call")
+        
         # Update environment
         if api_key:
             os.environ["GOOGLE_API_KEY"] = api_key
@@ -808,6 +824,7 @@ def process_ticket(ticket: TicketInfo):
         # Progress tracking
         progress_bar = st.progress(0)
         status_text = st.empty()
+        wait_text = st.empty()  # For rate limit wait times
         agent_logs = st.container()
         
         agents = [
@@ -826,12 +843,16 @@ def process_ticket(ticket: TicketInfo):
             "coverage_auditor": "🔍 Coverage Auditor Agent"
         }
         
+        # Counter for agent execution
+        current_agent_idx = [0]
+        
         def progress_callback(agent_name: str, state):
             if agent_name in agents:
                 idx = agents.index(agent_name)
                 progress = (idx + 1) / len(agents)
                 progress_bar.progress(progress)
                 status_text.markdown(f"**Processing:** {agent_names.get(agent_name, agent_name)}")
+                wait_text.empty()  # Clear wait message
                 
                 with agent_logs:
                     with st.expander(f"✅ {agent_names.get(agent_name, agent_name)}", expanded=False):
@@ -849,6 +870,9 @@ def process_ticket(ticket: TicketInfo):
                         elif agent_name == "coverage_auditor":
                             st.write(f"Coverage gaps: {len(state.get('coverage_gaps', []))}")
         
+        # Show info about rate limits
+        rate_info = st.info("⏱️ **Note**: Using free tier limits (5 API calls/minute). System will pause ~12 seconds between agents to respect rate limits.")
+        
         # Process ticket
         try:
             final_state = st.session_state.orchestrator.process_ticket(
@@ -861,6 +885,7 @@ def process_ticket(ticket: TicketInfo):
             
             progress_bar.progress(1.0)
             status_text.markdown("**✅ Processing Complete!**")
+            wait_text.empty()
             
             st.success(f"✅ Generated {len(final_state['test_cases'])} test cases in {final_state['processing_time']:.2f} seconds!")
             

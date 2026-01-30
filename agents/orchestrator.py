@@ -14,6 +14,8 @@ from agents.context_builder import ContextBuilderAgent
 from agents.test_strategy import TestStrategyAgent
 from agents.test_generator import TestGeneratorAgent
 from agents.coverage_auditor import CoverageAuditorAgent
+from utils.rate_limiter import get_rate_limiter
+from utils.api_cache import get_api_cache
 
 
 class AgentOrchestrator:
@@ -25,12 +27,18 @@ class AgentOrchestrator:
         genai.configure(api_key=google_api_key)
         self.llm_client = genai
         
+        # Initialize rate limiter (5 requests per minute for free tier)
+        self.rate_limiter = get_rate_limiter(max_requests=5, time_window=60)
+        
+        # Initialize API cache
+        self.api_cache = get_api_cache(ttl=3600)  # 1 hour cache
+        
         # Initialize all agents
-        self.ticket_reader = TicketReaderAgent(self.llm_client)
-        self.context_builder = ContextBuilderAgent(self.llm_client)
-        self.test_strategy = TestStrategyAgent(self.llm_client)
-        self.test_generator = TestGeneratorAgent(self.llm_client)
-        self.coverage_auditor = CoverageAuditorAgent(self.llm_client)
+        self.ticket_reader = TicketReaderAgent(self.llm_client, self.rate_limiter, self.api_cache)
+        self.context_builder = ContextBuilderAgent(self.llm_client, self.rate_limiter, self.api_cache)
+        self.test_strategy = TestStrategyAgent(self.llm_client, self.rate_limiter, self.api_cache)
+        self.test_generator = TestGeneratorAgent(self.llm_client, self.rate_limiter, self.api_cache)
+        self.coverage_auditor = CoverageAuditorAgent(self.llm_client, self.rate_limiter, self.api_cache)
         
         # Build the workflow graph
         self.workflow = self._build_workflow()

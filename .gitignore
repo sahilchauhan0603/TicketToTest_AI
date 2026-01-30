@@ -5,6 +5,9 @@ env/
 *.pyc
 __pycache__/
 
+# API Cache
+.api_cache/
+
 # IDE
 .vscode/
 .idea/
