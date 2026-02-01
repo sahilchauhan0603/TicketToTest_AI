@@ -38,7 +38,7 @@ streamlit run app.py
 ### 5-Minute Demo Script (Word-for-Word)
 
 **[0:00-0:15] Opening**
-> "Hi! I'm [name] from [team]. We built **Ticket-to-Test AI** - an agentic system that transforms Jira tickets into complete test cases in 15 seconds. Currently, QA teams waste 40-70% of their time writing test cases manually. We automate this entirely."
+> "Hi! I'm [name] from [team]. We built **Ticket-to-Test AI** - an agentic system that transforms Jira tickets into complete test cases in 3-4 minutes. Currently, QA teams waste 40-70% of their time writing test cases manually. We automate this entirely."
 
 **[0:15-0:45] Problem**
 > "The problem is massive. QA engineers spend 2-3 hours per ticket analyzing requirements and writing test cases. For a team of 5 QAs handling 50 tickets per sprint, that's 125 wasted hours. Multiply that by thousands of QA teams globally - we're talking billions in lost productivity. Plus, manual testing leads to inconsistent coverage and bugs slipping to production."
@@ -112,25 +112,76 @@ Jira/ADO Ticket → 6 AI Agents → Complete QA Roadmap + Test Cases
 
 ### Slide 4: Agentic Behavior (20% Weight)
 
+**Why This Is TRULY Agentic (Not Just AI Prompting):**
+
+This is **not** a chatbot with clever prompts. This is **true agentic AI** where specialized agents:
+- Make autonomous decisions based on ticket context
+- Work collaboratively toward a goal (complete test coverage)
+- Self-correct when gaps are detected
+- Maintain stateful memory across the workflow
+- Adapt to any ticket type without human intervention
+
 **Six Specialized Agents Working Autonomously:**
 
 ```
-1️⃣ Ticket Reader      → Extracts requirements & AC gaps
-2️⃣ Context Builder    → Identifies impacts & dependencies
-3️⃣ Test Strategist    → Creates QA roadmap by category
-4️⃣ Test Generator     → Generates detailed test cases
-5️⃣ Coverage Auditor   → Validates coverage & identifies gaps
-6️⃣ Sync Agent         → Posts back to Jira/ADO
+┌─────────────────────────────────────────────────────────┐
+│  AGENTIC WORKFLOW (Not Sequential Prompting!)          │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  1️⃣ Ticket Reader Agent                                │
+│     • Autonomously extracts requirements               │
+│     • Identifies AC gaps → generates clarifications    │
+│     • Decides: "Is this clear enough to proceed?"      │
+│                                                         │
+│  2️⃣ Context Builder Agent                              │
+│     • Analyzes ticket type → decides testing scope     │
+│     • Identifies impacted modules autonomously         │
+│     • Decides: "What other areas could be affected?"   │
+│                                                         │
+│  3️⃣ Test Strategy Agent                                │
+│     • Creates QA roadmap based on ticket complexity    │
+│     • Categorizes: Happy Path, Negative, Edge, etc.    │
+│     • Decides: "What testing categories are needed?"   │
+│                                                         │
+│  4️⃣ Test Generator Agent                               │
+│     • Generates test cases per category autonomously   │
+│     • Assigns priorities (P0/P1/P2) based on risk      │
+│     • Decides: "Which scenarios are most critical?"    │
+│                                                         │
+│  5️⃣ Coverage Auditor Agent (Self-Correction!)          │
+│     • Validates completeness independently             │
+│     • Finds missing scenarios                          │
+│     • Decides: "Are we missing edge cases?"            │
+│     • Generates follow-up questions                    │
+│     • LOOPS BACK if coverage insufficient              │
+│                                                         │
+│  6️⃣ Sync & Update Agent                                │
+│     • Monitors ticket changes via webhooks             │
+│     • Decides: "Do changes require regeneration?"      │
+│     • Posts updates back to Jira/ADO autonomously      │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
 ```
 
-**Why This Is Agentic:**
-- ✅ Autonomous decision-making (each agent decides based on context)
-- ✅ Goal-driven (final goal: complete test coverage)
-- ✅ Self-correcting (Coverage Auditor catches gaps)
-- ✅ Contextual memory (agents build on each other's outputs)
-- ✅ Adaptive (handles any ticket type)
+**Agentic vs Traditional AI:**
 
-**Technology:** LangGraph orchestration, structured outputs, state management
+| Feature | Traditional AI | **Our Agentic System** |
+|---------|---------------|----------------------|
+| Decision-Making | User decides next step | ✅ Agents decide autonomously |
+| Goal | Answer questions | ✅ Achieve complete test coverage |
+| Self-Correction | None | ✅ Coverage Auditor loops back |
+| Collaboration | Single model | ✅ 6 specialized agents |
+| Memory | Stateless | ✅ Stateful (LangGraph) |
+| Adaptability | Fixed prompts | ✅ Adapts to ticket complexity |
+
+**Technology Stack:**
+- **LangGraph** - Agent orchestration framework (not simple prompt chaining)
+- **Structured Outputs** - JSON schema validation prevents hallucinations
+- **State Management** - Agents share context and build on each other's work
+- **Goal-Driven Architecture** - System works toward complete coverage autonomously
+
+**What to Say:**
+> "This is agentic because six specialized agents work autonomously toward a goal—complete test coverage. They make independent decisions: the Ticket Reader decides if requirements are clear, the Coverage Auditor decides if coverage is sufficient and loops back if not. We use LangGraph for orchestration, giving agents state and memory. This isn't prompt engineering—it's true multi-agent collaboration with self-correction."
 
 ---
 
@@ -494,16 +545,3 @@ Last 30 seconds:
 3. Ground in problem you're solving
 
 ---
-
-## You've Got This! 🚀
-
-**You have:**
-- ✅ Working solution
-- ✅ Strong business case
-- ✅ True agentic architecture
-- ✅ Professional demo
-- ✅ Clear value proposition
-
-**Now go win the hackathon!**
-
-*Remember: Judges want you to succeed. Show passion, confidence, and the real value you've created.*

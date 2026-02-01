@@ -689,12 +689,6 @@ def display_ticket_input():
     with tab3:
         st.markdown("**Enter your own ticket details:**")
         
-        # Initialize session state for AI-generated content
-        if 'ai_description' not in st.session_state:
-            st.session_state.ai_description = ""
-        if 'ai_acceptance_criteria' not in st.session_state:
-            st.session_state.ai_acceptance_criteria = ""
-        
         col1, col2 = st.columns(2)
         with col1:
             ticket_id = st.text_input("Ticket ID", value="CUSTOM-001", key="custom_ticket_id")
@@ -716,18 +710,14 @@ def display_ticket_input():
                         with st.spinner("🤖 AI is generating ticket details..."):
                             result = generate_ticket_details(title, ticket_type)
                             if result:
-                                st.session_state.ai_description = result.get('description', '')
-                                st.session_state.ai_acceptance_criteria = '\n'.join(result.get('acceptance_criteria', []))
+                                # Update session state with widget keys so content appears in text areas
+                                st.session_state.custom_description = result.get('description', '')
+                                st.session_state.custom_ac = '\n'.join(result.get('acceptance_criteria', []))
                                 st.success("✅ Details generated! You can edit them below.")
                                 st.rerun()
         
-        # Use AI-generated content if available, otherwise empty
-        description_value = st.session_state.ai_description if st.session_state.ai_description else ""
-        ac_value = st.session_state.ai_acceptance_criteria if st.session_state.ai_acceptance_criteria else ""
-        
         description = st.text_area(
             "Description", 
-            value=description_value,
             height=150, 
             placeholder="Describe the ticket in detail...\n\nInclude:\n- What needs to be done\n- Expected behavior\n- Any technical details\n\n💡 Tip: Enter a title and click 'AI Generate' to auto-fill this field!",
             key="custom_description"
@@ -735,7 +725,6 @@ def display_ticket_input():
         
         ac_input = st.text_area(
             "Acceptance Criteria (one per line)",
-            value=ac_value,
             height=100,
             placeholder="Given a user is logged in\nWhen they click the submit button\nThen the form should be saved\n\n💡 Tip: Use 'AI Generate' button above to auto-fill!",
             help="Enter each acceptance criterion on a new line",
