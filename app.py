@@ -216,7 +216,7 @@ st.markdown("""
     
     section[data-testid="stSidebar"] .stTextInput input {
         border-radius: 4px;
-        border: 1px solid #dadce0;
+        border: none !important;
         padding: 0.5rem 0.75rem;
         font-size: 0.9rem;
         background-color: #ffffff;
@@ -224,8 +224,9 @@ st.markdown("""
     }
     
     section[data-testid="stSidebar"] .stTextInput input:focus {
-        border-color: #1967d2;
-        box-shadow: 0 0 0 1px #1967d2;
+        border: none !important;
+        box-shadow: none !important;
+        outline: none !important;
     }
     
     /* Text Areas - Light Theme */
@@ -374,15 +375,40 @@ def display_sidebar():
         
         # API Settings Section
         st.markdown("<div style='margin-bottom: 1.5rem;'>", unsafe_allow_html=True)
-        st.markdown("**API Credentials**")
         
-        # API Key input
-        api_key = st.text_input(
-            "Google API Key",
-            type="password",
-            value=os.getenv("GOOGLE_API_KEY", ""),
-            help="Enter your Google Gemini API key"
-        )
+        # Custom Credentials (optional - overrides .env)
+        with st.expander("🔧 Custom Credentials (Optional)", expanded=False):
+            st.caption("Override default credentials from .env file")
+            
+            custom_api_key = st.text_input(
+                "Custom API Key",
+                type="password",
+                value="",
+                placeholder="Leave empty to use .env value",
+                help="Enter your own Google Gemini API key to override the .env configuration"
+            )
+            
+            custom_model = st.text_input(
+                "Custom Model",
+                value="",
+                placeholder="e.g., gemini-2.0-flash-exp",
+                help="Enter a custom model name to override the .env configuration"
+            )
+            
+            if custom_api_key or custom_model:
+                st.caption("✅ Using custom credentials")
+            else:
+                st.caption("ℹ️ Using credentials from .env file")
+        
+        # Determine which credentials to use (custom overrides .env)
+        api_key = custom_api_key if custom_api_key else os.getenv("GOOGLE_API_KEY", "")
+        model_name = custom_model if custom_model else os.getenv("LLM_MODEL", "gemini-2.0-flash-exp")
+        
+        # Update environment with selected credentials
+        if api_key:
+            os.environ["GOOGLE_API_KEY"] = api_key
+        if model_name:
+            os.environ["LLM_MODEL"] = model_name
         
         # Rate limit configuration
         with st.expander("⏱️ Rate Limit Settings", expanded=False):
@@ -399,10 +425,6 @@ def display_sidebar():
                 st.caption("✅ Enabled - Identical requests use cached responses")
             else:
                 st.caption("⚠️ Disabled - Every request will use an API call")
-        
-        # Update environment
-        if api_key:
-            os.environ["GOOGLE_API_KEY"] = api_key
         
         st.markdown("</div>", unsafe_allow_html=True)
         
