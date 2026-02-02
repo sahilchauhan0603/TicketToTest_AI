@@ -20,7 +20,7 @@ class SyncAgent:
         self.name = "SyncAgent"
         self.integration_manager = IntegrationManager()
     
-    def process(self, state: AgentState, sync_options: Optional[Dict] = None) -> AgentState:
+    def process(self, state: AgentState, sync_options: Optional[Dict] = None) -> tuple[AgentState, Dict]:
         """
         Sync results back to ticket system
         
@@ -29,11 +29,16 @@ class SyncAgent:
             sync_options: Options for syncing (post_comment, attach_file, create_subtasks)
         
         Returns:
-            Updated state
+            Tuple of (updated state, sync_result dict with success status and messages)
         """
         state["current_agent"] = self.name
         
         sync_options = sync_options or {}
+        sync_result = {
+            "success": False,
+            "message": "",
+            "details": []
+        }
         
         # Auto-detect integration
         integration = self.integration_manager.auto_detect_integration()
@@ -43,28 +48,52 @@ class SyncAgent:
             log_agent_action(state, self.name, "sync_skipped", {
                 "reason": "No integration configured"
             })
-            return state
+            sync_result["message"] = "No integration configured. Please check your .env file."
+            return state, sync_result
         
         ticket_id = state["ticket_info"]["ticket_id"]
+        all_success = True
         
         # Post summary comment
         if sync_options.get('post_comment', True):
-            self._post_summary_comment(integration, ticket_id, state)
+            success = self._post_summary_comment(integration, ticket_id, state)
+            if success:
+                sync_result["details"].append("✅ Posted summary comment")
+            else:
+                sync_result["details"].append("❌ Failed to post comment")
+                all_success = False
         
         # Attach Excel file
         if sync_options.get('attach_file', False) and sync_options.get('excel_path'):
-            self._attach_test_cases(integration, ticket_id, sync_options['excel_path'])
+            success = self._attach_test_cases(integration, ticket_id, sync_options['excel_path'])
+            if success:
+                sync_result["details"].append("✅ Attached Excel file")
+            else:
+                sync_result["details"].append("❌ Failed to attach file")
+                all_success = False
         
         # Create subtasks/tasks for test cases
         if sync_options.get('create_subtasks', False):
-            self._create_test_subtasks(integration, ticket_id, state)
+            subtasks = self._create_test_subtasks(integration, ticket_id, state)
+            if subtasks:
+                sync_result["details"].append(f"✅ Created {len(subtasks)} test subtasks")
+            else:
+                sync_result["details"].append("❌ Failed to create subtasks")
+                all_success = False
+        
+        sync_result["success"] = all_success
+        if all_success:
+            sync_result["message"] = f"Successfully synced to {ticket_id}"
+        else:
+            sync_result["message"] = f"Sync to {ticket_id} completed with some errors"
         
         log_agent_action(state, self.name, "sync_completed", {
             "ticket_id": ticket_id,
-            "integration_type": type(integration).__name__
+            "integration_type": type(integration).__name__,
+            "success": all_success
         })
         
-        return state
+        return state, sync_result
     
     def _post_summary_comment(self, integration, ticket_id: str, state: AgentState) -> bool:
         """Post a summary comment with test case statistics"""

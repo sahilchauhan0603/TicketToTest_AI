@@ -384,11 +384,6 @@ def display_sidebar():
             help="Enter your Google Gemini API key"
         )
         
-        # Model info - read from .env, show current model
-        current_model = os.getenv("LLM_MODEL", "gemini-2.0-flash-exp")
-        st.info(f"📋 Current Model: **{current_model}**")
-        # st.caption("Edit LLM_MODEL in .env to change")
-        
         # Rate limit configuration
         with st.expander("⏱️ Rate Limit Settings", expanded=False):
             st.markdown("**Free Tier Limits (Gemini Flash)**")
@@ -1102,33 +1097,46 @@ def display_results(state):
                 
                 if st.button("🔄 Sync to Ticket System", type="secondary"):
                     with st.spinner("Syncing to ticket system..."):
-                        from agents.sync_agent import SyncAgent
+                        try:
+                            from agents.sync_agent import SyncAgent
+                            
+                            # Ensure Excel is generated if attaching
+                            excel_path = st.session_state.get('excel_path')
+                            if attach_file and not excel_path:
+                                # Generate Excel first
+                                output_dir = Path("outputs")
+                                output_dir.mkdir(exist_ok=True)
+                                ticket_id = state['ticket_info']['ticket_id'].replace('/', '_')
+                                filename = f"TestCases_{ticket_id}_{time.strftime('%Y%m%d_%H%M%S')}.xlsx"
+                                excel_path = str(output_dir / filename)
+                                exporter = ExcelExporter()
+                                exporter.export_test_cases(state, excel_path)
+                            
+                            sync_agent = SyncAgent()
+                            sync_options = {
+                                'post_comment': post_comment,
+                                'attach_file': attach_file,
+                                'excel_path': excel_path,
+                                'create_subtasks': create_subtasks
+                            }
+                            
+                            state_copy = dict(state)
+                            _, sync_result = sync_agent.process(state_copy, sync_options)
+                            
+                            # Display results
+                            if sync_result["success"]:
+                                st.success(f"✅ {sync_result['message']}")
+                                for detail in sync_result["details"]:
+                                    st.write(detail)
+                                st.balloons()
+                            else:
+                                st.warning(f"⚠️ {sync_result['message']}")
+                                for detail in sync_result["details"]:
+                                    st.write(detail)
                         
-                        # Ensure Excel is generated if attaching
-                        excel_path = st.session_state.get('excel_path')
-                        if attach_file and not excel_path:
-                            # Generate Excel first
-                            output_dir = Path("outputs")
-                            output_dir.mkdir(exist_ok=True)
-                            ticket_id = state['ticket_info']['ticket_id'].replace('/', '_')
-                            filename = f"TestCases_{ticket_id}_{time.strftime('%Y%m%d_%H%M%S')}.xlsx"
-                            excel_path = str(output_dir / filename)
-                            exporter = ExcelExporter()
-                            exporter.export_test_cases(state, excel_path)
-                        
-                        sync_agent = SyncAgent()
-                        sync_options = {
-                            'post_comment': post_comment,
-                            'attach_file': attach_file,
-                            'excel_path': excel_path,
-                            'create_subtasks': create_subtasks
-                        }
-                        
-                        state_copy = dict(state)
-                        sync_agent.process(state_copy, sync_options)
-                        
-                        st.success("✅ Successfully synced to ticket system!")
-                        st.balloons()
+                        except Exception as e:
+                            st.error(f"❌ Failed to sync: {str(e)}")
+                            st.error("Please check your .env configuration and ensure Jira/Azure DevOps credentials are correct.")
 
 
 def main():

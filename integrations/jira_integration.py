@@ -178,7 +178,9 @@ class JiraIntegration(TicketIntegration):
             True if successful, False otherwise
         """
         if not self.client:
+            logger.warning("Jira client not connected. Attempting to connect...")
             if not self.connect():
+                logger.error("Failed to connect to Jira before posting comment")
                 return False
         
         try:
@@ -186,7 +188,10 @@ class JiraIntegration(TicketIntegration):
             logger.info(f"Posted comment to Jira ticket: {ticket_id}")
             return True
         except JIRAError as e:
-            logger.error(f"Failed to post comment to {ticket_id}: {e}")
+            logger.error(f"Failed to post comment to {ticket_id}: {e.status_code} - {e.text}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error posting comment to {ticket_id}: {type(e).__name__} - {str(e)}")
             return False
     
     def attach_file(self, ticket_id: str, file_path: str, filename: str) -> bool:
@@ -202,10 +207,17 @@ class JiraIntegration(TicketIntegration):
             True if successful, False otherwise
         """
         if not self.client:
+            logger.warning("Jira client not connected. Attempting to connect...")
             if not self.connect():
+                logger.error("Failed to connect to Jira before attaching file")
                 return False
         
         try:
+            import os
+            if not os.path.exists(file_path):
+                logger.error(f"File not found: {file_path}")
+                return False
+            
             with open(file_path, 'rb') as f:
                 self.client.add_attachment(
                     issue=ticket_id,
@@ -214,8 +226,11 @@ class JiraIntegration(TicketIntegration):
                 )
             logger.info(f"Attached file {filename} to Jira ticket: {ticket_id}")
             return True
+        except JIRAError as e:
+            logger.error(f"Failed to attach file to {ticket_id}: {e.status_code} - {e.text}")
+            return False
         except Exception as e:
-            logger.error(f"Failed to attach file to {ticket_id}: {e}")
+            logger.error(f"Unexpected error attaching file to {ticket_id}: {type(e).__name__} - {str(e)}")
             return False
     
     def get_linked_tickets(self, ticket_id: str) -> List[str]:
@@ -296,7 +311,9 @@ class JiraIntegration(TicketIntegration):
             List of created subtask keys
         """
         if not self.client:
+            logger.warning("Jira client not connected. Attempting to connect...")
             if not self.connect():
+                logger.error("Failed to connect to Jira before creating subtasks")
                 return []
         
         created_subtasks = []
@@ -305,23 +322,37 @@ class JiraIntegration(TicketIntegration):
             parent_issue = self.client.issue(parent_ticket_id)
             project_key = parent_issue.fields.project.key
             
-            for i, test_case in enumerate(test_cases[:max_subtasks]):
-                subtask_dict = {
-                    'project': {'key': project_key},
-                    'summary': f"[TEST] {test_case.get('title', 'Test Case')}",
-                    'description': self._format_test_case_description(test_case),
-                    'issuetype': {'name': 'Sub-task'},
-                    'parent': {'key': parent_ticket_id}
-                }
-                
-                subtask = self.client.create_issue(fields=subtask_dict)
-                created_subtasks.append(subtask.key)
-                logger.info(f"Created test subtask: {subtask.key}")
+            logger.info(f"Creating subtasks for {parent_ticket_id} in project {project_key}")
             
+            for i, test_case in enumerate(test_cases[:max_subtasks]):
+                try:
+                    subtask_dict = {
+                        'project': {'key': project_key},
+                        'summary': f"[TEST] {test_case.get('title', 'Test Case')}",
+                        'description': self._format_test_case_description(test_case),
+                        'issuetype': {'name': 'Sub-task'},
+                        'parent': {'key': parent_ticket_id}
+                    }
+                    
+                    subtask = self.client.create_issue(fields=subtask_dict)
+                    created_subtasks.append(subtask.key)
+                    logger.info(f"Created test subtask {i+1}/{min(len(test_cases), max_subtasks)}: {subtask.key}")
+                except JIRAError as e:
+                    logger.error(f"Failed to create subtask {i+1}: {e.status_code} - {e.text}")
+                    # Continue with other subtasks
+                    continue
+                except Exception as e:
+                    logger.error(f"Unexpected error creating subtask {i+1}: {type(e).__name__} - {str(e)}")
+                    continue
+            
+            logger.info(f"Successfully created {len(created_subtasks)} out of {min(len(test_cases), max_subtasks)} subtasks")
             return created_subtasks
             
+        except JIRAError as e:
+            logger.error(f"Failed to access parent ticket {parent_ticket_id}: {e.status_code} - {e.text}")
+            return created_subtasks
         except Exception as e:
-            logger.error(f"Failed to create test subtasks: {e}")
+            logger.error(f"Failed to create test subtasks: {type(e).__name__} - {str(e)}")
             return created_subtasks
     
     def _format_test_case_description(self, test_case: Dict) -> str:
