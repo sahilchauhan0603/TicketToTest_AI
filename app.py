@@ -337,6 +337,25 @@ def init_session_state():
         st.session_state.final_state = None
     if 'processing' not in st.session_state:
         st.session_state.processing = False
+    if 'selected_ticket' not in st.session_state:
+        st.session_state.selected_ticket = None
+    if 'excel_path' not in st.session_state:
+        st.session_state.excel_path = None
+    if 'ticket_source' not in st.session_state:
+        st.session_state.ticket_source = None  # Can be 'sample', 'live', or 'custom'
+    if 'current_generation_id' not in st.session_state:
+        st.session_state.current_generation_id = None
+    if 'ticket_input_mode' not in st.session_state:
+        st.session_state.ticket_input_mode = None  # None = show landing page
+    if 'loaded_from_history' not in st.session_state:
+        st.session_state.loaded_from_history = False
+    
+    # Scroll to top on page load
+    st.markdown("""
+        <script>
+            window.parent.document.querySelector('section.main').scrollTo(0, 0);
+        </script>
+    """, unsafe_allow_html=True)
 
 
 def display_header():
@@ -520,6 +539,7 @@ def display_sidebar():
                             
                             st.session_state.final_state = loaded_state
                             st.session_state.current_generation_id = gen_info['id']
+                            st.session_state.loaded_from_history = True  # Skip steps 1 & 2
                             if gen_info['excel_file_path']:
                                 st.session_state.excel_path = gen_info['excel_file_path']
                             
@@ -546,6 +566,7 @@ def display_sidebar():
                             if st.button("📂", key=f"sidebar_load_{gen['id'][:8]}", help="Load"):
                                 loaded_data = db.get_generation_by_id(gen['id'])
                                 if loaded_data:
+                                    st.session_state.loaded_from_history = True  # Skip steps 1 & 2
                                     gen_info = loaded_data['generation']
                                     test_cases = loaded_data['test_cases']
                                     coverage_gaps = loaded_data['coverage_gaps']
@@ -570,6 +591,7 @@ def display_sidebar():
                                     
                                     st.session_state.final_state = loaded_state
                                     st.session_state.current_generation_id = gen_info['id']
+                                    st.session_state.loaded_from_history = True  # Skip steps 1 & 2
                                     if gen_info['excel_file_path']:
                                         st.session_state.excel_path = gen_info['excel_file_path']
                                     
@@ -677,8 +699,125 @@ Keep it professional and specific to the ticket type."""
         return None
 
 
+def display_landing_page():
+    """Display professional landing page with ticket input options"""
+    st.markdown("""<div style='text-align: center; padding: 2rem 0;'>
+        <h2 style='color: #1f77b4; font-size: 2rem; margin-bottom: 1rem;'>Welcome to Ticket-to-Test AI</h2>
+        <p style='font-size: 1.1rem; color: #666; margin-bottom: 2rem;'>Transform tickets into comprehensive test cases in 4-5 minutes</p>
+    </div>""", unsafe_allow_html=True)
+    
+    st.markdown("### Choose Your Ticket Input Method")
+    st.caption("Select how you want to provide the ticket for test case generation")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""<div style='text-align: center; padding: 1rem; border: 2px solid #e0e0e0; border-radius: 10px; background: #f9f9f9;'>
+            <h3 style='color: #1f77b4;'>🎯 Sample Tickets</h3>
+            <p style='color: #666; font-size: 0.9rem;'>Pre-loaded demo tickets for quick testing</p>
+        </div>""", unsafe_allow_html=True)
+        if st.button("Use Sample Tickets", key="mode_sample", use_container_width=True, type="primary"):
+            st.session_state.ticket_input_mode = "sample"
+            st.session_state.loaded_from_history = False
+            st.rerun()
+    
+    with col2:
+        st.markdown("""<div style='text-align: center; padding: 1rem; border: 2px solid #e0e0e0; border-radius: 10px; background: #f9f9f9;'>
+            <h3 style='color: #28a745;'>🔗 Live Integration</h3>
+            <p style='color: #666; font-size: 0.9rem;'>Fetch from Jira or Azure DevOps</p>
+        </div>""", unsafe_allow_html=True)
+        if st.button("Connect to Jira/Azure", key="mode_live", use_container_width=True, type="primary"):
+            st.session_state.ticket_input_mode = "live"
+            st.session_state.loaded_from_history = False
+            st.rerun()
+    
+    with col3:
+        st.markdown("""<div style='text-align: center; padding: 1rem; border: 2px solid #e0e0e0; border-radius: 10px; background: #f9f9f9;'>
+            <h3 style='color: #ff9800;'>✏️ Custom Input</h3>
+            <p style='color: #666; font-size: 0.9rem;'>Manually enter your own ticket</p>
+        </div>""", unsafe_allow_html=True)
+        if st.button("Create Custom Ticket", key="mode_custom", use_container_width=True, type="primary"):
+            st.session_state.ticket_input_mode = "custom"
+            st.session_state.loaded_from_history = False
+            st.rerun()
+
+
+def display_landing_page():
+    """Display professional landing page with ticket input options"""
+    st.markdown("""<div style='text-align: center; padding: 2rem 0;'>
+        <h2 style='color: #1f77b4; font-size: 2rem; margin-bottom: 1rem;'>Welcome to Ticket-to-Test AI</h2>
+        <p style='font-size: 1.1rem; color: #666; margin-bottom: 2rem;'>Transform tickets into comprehensive test cases in 4-5 minutes</p>
+    </div>""", unsafe_allow_html=True)
+    
+    st.markdown("### Choose Your Ticket Input Method")
+    st.caption("Select how you want to provide the ticket for test case generation")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""<div style='text-align: center; padding: 1.5rem; border: 2px solid #e0e0e0; border-radius: 10px; background: #f9f9f9; min-height: 150px; display: flex; flex-direction: column; justify-content: center; margin-bottom: 1rem;'>
+            <h3 style='color: #1f77b4; margin-bottom: 0.5rem;'>Sample Tickets</h3>
+            <p style='color: #666; font-size: 0.9rem; margin: 0;'>Pre-loaded demo tickets</p>
+        </div>""", unsafe_allow_html=True)
+        if st.button("Use Sample Tickets", key="mode_sample", use_container_width=True, type="primary"):
+            st.session_state.ticket_input_mode = "sample"
+            st.session_state.loaded_from_history = False
+            st.rerun()
+    
+    with col2:
+        st.markdown("""<div style='text-align: center; padding: 1.5rem; border: 2px solid #e0e0e0; border-radius: 10px; background: #f9f9f9; min-height: 150px; display: flex; flex-direction: column; justify-content: center; margin-bottom: 1rem;'>
+            <h3 style='color: #28a745; margin-bottom: 0.5rem;'>Live Integration</h3>
+            <p style='color: #666; font-size: 0.9rem; margin: 0;'>Fetch from Jira or Azure DevOps</p>
+        </div>""", unsafe_allow_html=True)
+        if st.button("Connect to Jira/Azure", key="mode_live", use_container_width=True, type="primary"):
+            st.session_state.ticket_input_mode = "live"
+            st.session_state.loaded_from_history = False
+            st.rerun()
+    
+    with col3:
+        st.markdown("""<div style='text-align: center; padding: 1.5rem; border: 2px solid #e0e0e0; border-radius: 10px; background: #f9f9f9; min-height: 150px; display: flex; flex-direction: column; justify-content: center; margin-bottom: 1rem;'>
+            <h3 style='color: #ff9800; margin-bottom: 0.5rem;'>✏️Custom Input</h3>
+            <p style='color: #666; font-size: 0.9rem; margin: 0;'>Manually enter your own ticket</p>
+        </div>""", unsafe_allow_html=True)
+        if st.button("Create Custom Ticket", key="mode_custom", use_container_width=True, type="primary"):
+            st.session_state.ticket_input_mode = "custom"
+            st.session_state.loaded_from_history = False
+            st.rerun()
+
+
 def display_ticket_input():
-    """Display ticket input section"""
+    """Display ticket input section based on selected mode"""
+    # Show landing page if no mode selected
+    if st.session_state.ticket_input_mode is None:
+        display_landing_page()
+        return None
+    
+    # Back to home button at the very top
+    if st.button("← Back to Home", key="back_home"):
+        st.session_state.ticket_input_mode = None
+        st.session_state.selected_ticket = None
+        st.rerun()
+    
+    st.markdown("---")
+    
+    # Display mode indicator - centered and larger
+    mode = st.session_state.ticket_input_mode
+    if mode == "sample":
+        st.markdown("""<div style='text-align: center;'>
+            <h2 style='color: #1f77b4; font-size: 1.8rem; margin-bottom: 0.3rem;'>📋 Sample Tickets</h2>
+            <p style='color: #888; font-size: 1rem;'>Pre-loaded demonstration tickets for quick testing</p>
+        </div>""", unsafe_allow_html=True)
+    elif mode == "live":
+        st.markdown("""<div style='text-align: center;'>
+            <h2 style='color: #28a745; font-size: 1.8rem; margin-bottom: 0.3rem;'>🔗 Live Integration</h2>
+            <p style='color: #888; font-size: 1rem;'>Fetch tickets directly from Jira or Azure DevOps</p>
+        </div>""", unsafe_allow_html=True)
+    elif mode == "custom":
+        st.markdown("""<div style='text-align: center;'>
+            <h2 style='color: #ff9800; font-size: 1.8rem; margin-bottom: 0.3rem;'>✏️ Custom Input</h2>
+            <p style='color: #888; font-size: 1rem;'>Enter your own ticket details manually</p>
+        </div>""", unsafe_allow_html=True)
+    
     st.markdown("### Step 1: Ticket Input")
     st.caption("Select or import a ticket to begin test case generation")
     
@@ -686,206 +825,217 @@ def display_ticket_input():
     if 'selected_ticket' not in st.session_state:
         st.session_state.selected_ticket = None
     
-    # Tabs for different input methods
-    tab1, tab2, tab3 = st.tabs(["Sample Tickets", "Live Integration", "Custom Input"])
+    # Display only the selected input mode
+    if mode == "sample":
+        return display_sample_tickets()
+    elif mode == "live":
+        return display_live_integration()
+    elif mode == "custom":
+        return display_custom_input()
+
+
+def display_sample_tickets():
+    """Display sample tickets input"""
     
-    with tab1:
-        st.markdown("**Select a demonstration ticket:**")
-        
-        sample_type = st.selectbox(
-            "Choose sample ticket type:",
-            ["bug_fix", "feature", "api_change"],
-            format_func=lambda x: {
-                "bug_fix": "🐛 Bug Fix - Login with Special Characters",
-                "feature": "✨ Feature - PDF Export for Reports",
-                "api_change": "🔧 API Change - Profile Picture Upload"
-            }[x]
-        )
-        
-        ticket = get_sample_ticket(sample_type)
-        
-        # Display ticket preview
-        with st.expander("📄 View Ticket Details", expanded=True):
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.markdown(f"**ID:** {ticket['ticket_id']}")
-                st.markdown(f"**Type:** {ticket['ticket_type']}")
-            with col2:
-                st.markdown(f"**Priority:** {ticket['priority']}")
-                st.markdown(f"**Status:** {ticket['status']}")
-            with col3:
-                st.markdown(f"**Attachments:** {len(ticket['attachments'])}")
-                st.markdown(f"**Comments:** {len(ticket['comments'])}")
-            
-            st.markdown("<p style='font-weight: 600; text-decoration: underline;'>Title:</p>", unsafe_allow_html=True)
-            st.info(ticket['title'])
-            
-            st.markdown("<p style='font-weight: 600; text-decoration: underline;'>Description:</p>", unsafe_allow_html=True)
-            st.text_area("", ticket['description'], height=150, disabled=True, label_visibility="collapsed", key="sample_desc")
-            
-            if ticket['acceptance_criteria']:
-                st.markdown("<p style='font-weight: 600; text-decoration: underline;'>Acceptance Criteria:</p>", unsafe_allow_html=True)
-                for ac in ticket['acceptance_criteria']:
-                    st.markdown(f"- {ac}")
-            
-            # Display attachments if any
-            if ticket['attachments']:
-                st.markdown("<p style='font-weight: 600; text-decoration: underline;'>Attachments:</p>", unsafe_allow_html=True)
-                for attachment in ticket['attachments']:
-                    st.markdown(f"📎 {attachment}")
-            
-            # Display comments if any
-            if ticket['comments']:
-                st.markdown("<p style='font-weight: 600; text-decoration: underline;'>Comments:</p>", unsafe_allow_html=True)
-                for comment in ticket['comments']:
-                    with st.container():
-                        st.markdown(f"**{comment['author']}:**")
-                        st.markdown(f"> {comment['body']}")
-                        st.markdown("")
-        
-        # Store ticket for this tab
-        st.session_state.selected_ticket = ticket
-        st.session_state.ticket_source = 'sample'  # Mark as sample ticket
+    sample_type = st.selectbox(
+        "Choose sample ticket type:",
+        ["bug_fix", "feature", "api_change"],
+        format_func=lambda x: {
+            "bug_fix": "🐛 Bug Fix - Login with Special Characters",
+            "feature": "✨ Feature - PDF Export for Reports",
+            "api_change": "🔧 API Change - Profile Picture Upload"
+        }[x]
+    )
     
-    with tab2:
-        st.markdown("**Fetch tickets directly from Jira or Azure DevOps:**")
-        
-        from integrations.manager import IntegrationManager
-        manager = IntegrationManager()
-        
-        # Integration selection
-        col1, col2 = st.columns(2)
-        
+    ticket = get_sample_ticket(sample_type)
+    
+    # Display ticket preview
+    with st.expander("📄 View Ticket Details", expanded=True):
+        col1, col2, col3 = st.columns(3)
         with col1:
-            integration_type = st.selectbox(
-                "Select Integration",
-                ["Jira", "Azure DevOps"],
-                help="Choose your ticket management system"
-            )
-        
+            st.markdown(f"**ID:** {ticket['ticket_id']}")
+            st.markdown(f"**Type:** {ticket['ticket_type']}")
         with col2:
-            # Check if configured
-            is_configured = manager.is_configured(integration_type.lower().replace(' ', '_'))
-            if is_configured:
-                st.success(f"✓ {integration_type} configured")
-            else:
-                st.warning(f"⚠ {integration_type} not configured")
+            st.markdown(f"**Priority:** {ticket['priority']}")
+            st.markdown(f"**Status:** {ticket['status']}")
+        with col3:
+            st.markdown(f"**Attachments:** {len(ticket['attachments'])}")
+            st.markdown(f"**Comments:** {len(ticket['comments'])}")
         
-        # Configuration instructions
-        if not is_configured:
-            with st.expander("⚙️ Setup Instructions", expanded=False):
-                if integration_type == "Jira":
-                    st.markdown("""
-                    **Configure Jira in .env file:**
-                    ```
-                    JIRA_URL=https://your-domain.atlassian.net
-                    JIRA_EMAIL=your-email@example.com
-                    JIRA_API_TOKEN=your_api_token
-                    ```
-                    
-                    **Get API Token:**
-                    1. Go to https://id.atlassian.com/manage/api-tokens
-                    2. Create API token
-                    3. Copy and paste into .env
-                    """)
-                else:
-                    st.markdown("""
-                    **Configure Azure DevOps in .env file:**
-                    ```
-                    AZURE_DEVOPS_ORG=https://dev.azure.com/your-org
-                    AZURE_DEVOPS_PAT=your_personal_access_token
-                    AZURE_DEVOPS_PROJECT=your-project-name
-                    ```
-                    
-                    **Get Personal Access Token:**
-                    1. Go to Azure DevOps → User Settings → Personal Access Tokens
-                    2. Create new token with Work Items (Read & Write)
-                    3. Copy and paste into .env
-                    """)
+        st.markdown("<p style='font-weight: 600; text-decoration: underline;'>Title:</p>", unsafe_allow_html=True)
+        st.info(ticket['title'])
         
-        # Ticket ID input
-        ticket_id = st.text_input(
-            "Ticket ID",
-            placeholder="PROJ-123" if integration_type == "Jira" else "12345",
-            help=f"Enter the {integration_type} ticket/work item ID"
+        st.markdown("<p style='font-weight: 600; text-decoration: underline;'>Description:</p>", unsafe_allow_html=True)
+        st.text_area("", ticket['description'], height=150, disabled=True, label_visibility="collapsed", key="sample_desc")
+        
+        if ticket['acceptance_criteria']:
+            st.markdown("<p style='font-weight: 600; text-decoration: underline;'>Acceptance Criteria:</p>", unsafe_allow_html=True)
+            for ac in ticket['acceptance_criteria']:
+                st.markdown(f"- {ac}")
+        
+        # Display attachments if any
+        if ticket['attachments']:
+            st.markdown("<p style='font-weight: 600; text-decoration: underline;'>Attachments:</p>", unsafe_allow_html=True)
+            for attachment in ticket['attachments']:
+                st.markdown(f"📎 {attachment}")
+        
+        # Display comments if any
+        if ticket['comments']:
+            st.markdown("<p style='font-weight: 600; text-decoration: underline;'>Comments:</p>", unsafe_allow_html=True)
+            for comment in ticket['comments']:
+                with st.container():
+                    st.markdown(f"**{comment['author']}:**")
+                    st.markdown(f"> {comment['body']}")
+                    st.markdown("")
+    
+    # Store ticket for this tab
+    st.session_state.selected_ticket = ticket
+    st.session_state.ticket_source = 'sample'  # Mark as sample ticket
+    return st.session_state.selected_ticket
+
+
+def display_live_integration():
+    """Display live integration input"""
+    
+    from integrations.manager import IntegrationManager
+    manager = IntegrationManager()
+    
+    # Integration selection
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        integration_type = st.selectbox(
+            "Select Integration",
+            ["Jira", "Azure DevOps"],
+            help="Choose your ticket management system"
         )
-        
-        # Fetch button
-        if st.button("🔍 Fetch Ticket", type="secondary", disabled=not is_configured):
-            if not ticket_id:
-                st.error("Please enter a ticket ID")
+    
+    with col2:
+        # Check if configured
+        is_configured = manager.is_configured(integration_type.lower().replace(' ', '_'))
+        if is_configured:
+            st.success(f"✓ {integration_type} configured")
+        else:
+            st.warning(f"⚠ {integration_type} not configured")
+    
+    # Configuration instructions
+    if not is_configured:
+        with st.expander("⚙️ Setup Instructions", expanded=False):
+            if integration_type == "Jira":
+                st.markdown("""
+                **Configure Jira in .env file:**
+                ```
+                JIRA_URL=https://your-domain.atlassian.net
+                JIRA_EMAIL=your-email@example.com
+                JIRA_API_TOKEN=your_api_token
+                ```
+                
+                **Get API Token:**
+                1. Go to https://id.atlassian.com/manage/api-tokens
+                2. Create API token
+                3. Copy and paste into .env
+                """)
             else:
-                with st.spinner(f"Fetching ticket from {integration_type}..."):
-                    integration = manager.get_integration(integration_type.lower().replace(' ', '_'))
+                st.markdown("""
+                **Configure Azure DevOps in .env file:**
+                ```
+                AZURE_DEVOPS_ORG=https://dev.azure.com/your-org
+                AZURE_DEVOPS_PAT=your_personal_access_token
+                AZURE_DEVOPS_PROJECT=your-project-name
+                ```
+                
+                **Get Personal Access Token:**
+                1. Go to Azure DevOps → User Settings → Personal Access Tokens
+                2. Create new token with Work Items (Read & Write)
+                3. Copy and paste into .env
+                """)
+    
+    # Ticket ID input
+    ticket_id = st.text_input(
+        "Ticket ID",
+        placeholder="PROJ-123" if integration_type == "Jira" else "12345",
+        help=f"Enter the {integration_type} ticket/work item ID"
+    )
+    
+    # Fetch button
+    if st.button("🔍 Fetch Ticket", type="secondary", disabled=not is_configured):
+        if not ticket_id:
+            st.error("Please enter a ticket ID")
+        else:
+            with st.spinner(f"Fetching ticket from {integration_type}..."):
+                integration = manager.get_integration(integration_type.lower().replace(' ', '_'))
+                
+                if integration:
+                    ticket = integration.fetch_ticket(ticket_id)
                     
-                    if integration:
-                        ticket = integration.fetch_ticket(ticket_id)
+                    if ticket:
+                        st.success(f"✓ Successfully fetched {ticket_id}")
                         
-                        if ticket:
-                            st.success(f"✓ Successfully fetched {ticket_id}")
+                        # Store ticket source as live integration
+                        st.session_state.ticket_source = 'live'
+                        
+                        # Display ticket preview
+                        with st.expander("📄 Ticket Details", expanded=True):
+                            col1, col2, col3 = st.columns(3)
+                            with col1:
+                                st.markdown(f"**ID:** {ticket['ticket_id']}")
+                                st.markdown(f"**Type:** {ticket['ticket_type']}")
+                            with col2:
+                                st.markdown(f"**Priority:** {ticket['priority']}")
+                                st.markdown(f"**Status:** {ticket['status']}")
+                            with col3:
+                                st.markdown(f"**Attachments:** {len(ticket['attachments'])}")
+                                st.markdown(f"**Comments:** {len(ticket['comments'])}")
                             
-                            # Store ticket source as live integration
-                            st.session_state.ticket_source = 'live'
+                            st.markdown("**Title:**")
+                            st.info(ticket['title'])
                             
-                            # Display ticket preview
-                            with st.expander("📄 Ticket Details", expanded=True):
-                                col1, col2, col3 = st.columns(3)
-                                with col1:
-                                    st.markdown(f"**ID:** {ticket['ticket_id']}")
-                                    st.markdown(f"**Type:** {ticket['ticket_type']}")
-                                with col2:
-                                    st.markdown(f"**Priority:** {ticket['priority']}")
-                                    st.markdown(f"**Status:** {ticket['status']}")
-                                with col3:
-                                    st.markdown(f"**Attachments:** {len(ticket['attachments'])}")
-                                    st.markdown(f"**Comments:** {len(ticket['comments'])}")
-                                
-                                st.markdown("**Title:**")
-                                st.info(ticket['title'])
-                                
-                                st.markdown("**Description:**")
-                                st.text_area("", ticket['description'], height=150, disabled=True, label_visibility="collapsed")
-                                
-                                if ticket['acceptance_criteria']:
-                                    st.markdown("**Acceptance Criteria:**")
-                                    for ac in ticket['acceptance_criteria']:
-                                        st.markdown(f"- {ac}")
+                            st.markdown("**Description:**")
+                            st.text_area("", ticket['description'], height=150, disabled=True, label_visibility="collapsed")
                             
-                            st.session_state.selected_ticket = ticket
-                        else:
-                            st.error(f"Failed to fetch ticket {ticket_id}. Check the ID and try again.")
+                            if ticket['acceptance_criteria']:
+                                st.markdown("**Acceptance Criteria:**")
+                                for ac in ticket['acceptance_criteria']:
+                                    st.markdown(f"- {ac}")
+                        
+                        st.session_state.selected_ticket = ticket
                     else:
-                        st.error(f"Failed to connect to {integration_type}. Check your credentials in .env")
+                        st.error(f"Failed to fetch ticket {ticket_id}. Check the ID and try again.")
+                else:
+                    st.error(f"Failed to connect to {integration_type}. Check your credentials in .env")
     
-    with tab3:
-        st.markdown("**Enter your own ticket details:**")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            ticket_id = st.text_input("Ticket ID", value="CUSTOM-001", key="custom_ticket_id")
-            ticket_type = st.selectbox("Type", ["bug", "story", "task"], key="custom_type")
-            priority = st.selectbox("Priority", ["P0", "P1", "P2", "P3"], key="custom_priority")
-        
-        with col2:
-            title = st.text_input("Title", placeholder="Enter ticket title...", key="custom_title")
-            status = st.selectbox("Status", ["To Do", "In Progress", "In Review"], key="custom_status")
-        
-        # AI Generation Feature
-        if title:
-            col_btn1, col_btn2 = st.columns([3, 1])
-            with col_btn2:
-                if st.button("✨ AI Generate", type="secondary", help="Auto-generate description and acceptance criteria using AI"):
-                    if not os.getenv("GOOGLE_API_KEY"):
-                        st.error("⚠️ Please enter your Google Gemini API key in the sidebar.")
-                    else:
-                        with st.spinner("🤖 AI is generating ticket details..."):
-                            result = generate_ticket_details(title, ticket_type)
-                            if result:
-                                # Update session state with widget keys so content appears in text areas
-                                st.session_state.custom_description = result.get('description', '')
-                                st.session_state.custom_ac = '\n'.join(result.get('acceptance_criteria', []))
-                                st.success("✅ Details generated! You can edit them below.")
-                                st.rerun()
+    return st.session_state.selected_ticket
+
+
+def display_custom_input():
+    """Display custom input form"""
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        ticket_id = st.text_input("Ticket ID", value="CUSTOM-001", key="custom_ticket_id")
+        ticket_type = st.selectbox("Type", ["bug", "story", "task"], key="custom_type")
+        priority = st.selectbox("Priority", ["P0", "P1", "P2", "P3"], key="custom_priority")
+    
+    with col2:
+        title = st.text_input("Title", placeholder="Enter ticket title...", key="custom_title")
+        status = st.selectbox("Status", ["To Do", "In Progress", "In Review"], key="custom_status")
+    
+    # AI Generation Feature
+    if title:
+        col_btn1, col_btn2 = st.columns([3, 1])
+        with col_btn2:
+            if st.button("✨ AI Generate", type="secondary", help="Auto-generate description and acceptance criteria using AI"):
+                if not os.getenv("GOOGLE_API_KEY"):
+                    st.error("⚠️ Please enter your Google Gemini API key in the sidebar.")
+                else:
+                    with st.spinner("🤖 AI is generating ticket details..."):
+                        result = generate_ticket_details(title, ticket_type)
+                        if result:
+                            # Update session state with widget keys so content appears in text areas
+                            st.session_state.custom_description = result.get('description', '')
+                            st.session_state.custom_ac = '\n'.join(result.get('acceptance_criteria', []))
+                            st.success("✅ Details generated! You can edit them below.")
+                            st.rerun()
         
         description = st.text_area(
             "Description", 
@@ -1072,8 +1222,7 @@ def display_results(state):
     if state is None:
         return
     
-    st.markdown("### Step 3: Generated Outputs")
-    st.caption("Review test cases, coverage analysis, and export options")
+    st.markdown("### Test Generation Results")
     
     # Metrics
     col1, col2, col3, col4 = st.columns(4)
@@ -1356,25 +1505,101 @@ def main():
         except Exception as e:
             pass  # Silent fail, don't block app startup
     
-    display_header()
+    # Only show header on landing page (when no mode is selected and not loaded from history)
+    if st.session_state.ticket_input_mode is None and not st.session_state.loaded_from_history:
+        display_header()
+    
     display_sidebar()
     
-    st.divider()
-    
-    # Step 1: Ticket Input
-    ticket = display_ticket_input()
-    
-    st.divider()
-    
-    # Step 2: Processing
-    if ticket:
-        final_state = process_ticket(ticket)
+    # If loaded from history, skip steps 1 & 2 and show only results
+    if st.session_state.loaded_from_history and st.session_state.final_state:
+        # Start New Generation button at the very top
+        if st.button("🆕 Start New Generation", type="secondary", key="start_new_gen"):
+            st.session_state.loaded_from_history = False
+            st.session_state.final_state = None
+            st.session_state.selected_ticket = None
+            st.session_state.ticket_input_mode = None
+            st.rerun()
+        
+        st.markdown("---")
+        
+        # Display header with ticket information
+        st.markdown("""<div style='text-align: center;'>
+            <h2 style='color: #1f77b4; font-size: 1.8rem; margin-bottom: 0.3rem;'>📜 Loaded from History</h2>
+            <p style='color: #888; font-size: 1rem;'>Viewing previously generated test results</p>
+        </div>""", unsafe_allow_html=True)
         
         st.divider()
         
-        # Step 3: Results
-        if final_state:
-            display_results(final_state)
+        # Display ticket details
+        ticket_info = st.session_state.final_state.get('ticket_info', {})
+        
+        # Get generation metadata from database if available
+        generation_id = st.session_state.get('current_generation_id')
+        generation_date = None
+        if generation_id:
+            try:
+                db = DatabaseManager()
+                gen_data = db.get_generation_by_id(generation_id)
+                if gen_data:
+                    generation_date = gen_data['generation'].get('timestamp')
+            except:
+                pass
+        
+        st.markdown("### 📋 Ticket Information")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.markdown("**Ticket ID**")
+            st.info(ticket_info.get('ticket_id', 'N/A'))
+        with col2:
+            st.markdown("**Type**")
+            ticket_type = ticket_info.get('ticket_type', 'N/A')
+            type_emoji = {"bug": "🐛", "story": "✨", "task": "📝", "feature": "🎯"}.get(ticket_type.lower(), "📌")
+            st.info(f"{type_emoji} {ticket_type.capitalize()}")
+        with col3:
+            st.markdown("**Total Test Cases**")
+            st.info(f"{len(st.session_state.final_state.get('test_cases', []))}")
+        with col4:
+            st.markdown("**Generated On**")
+            if generation_date:
+                from datetime import datetime
+                try:
+                    dt = datetime.fromisoformat(generation_date)
+                    formatted_date = dt.strftime("%b %d, %Y %I:%M %p")
+                    st.info(formatted_date)
+                except:
+                    st.info(generation_date[:16] if generation_date else 'N/A')
+            else:
+                st.info('N/A')
+        
+        # Ticket title and description
+        if ticket_info.get('title'):
+            st.markdown("**Title:**")
+            st.success(ticket_info['title'])
+        
+        if ticket_info.get('description'):
+            with st.expander("📄 View Ticket Description", expanded=False):
+                st.markdown(ticket_info['description'])
+        
+        st.divider()
+        display_results(st.session_state.final_state)
+    else:
+        # Normal flow: Steps 1, 2, 3
+        # Step 1: Ticket Input
+        ticket = display_ticket_input()
+        
+        st.divider()
+        
+        # Step 2: Processing
+        if ticket:
+            final_state = process_ticket(ticket)
+            
+            st.divider()
+            
+            # Step 3: Results
+            if final_state:
+                display_results(final_state)
 
 
 if __name__ == "__main__":
