@@ -67,8 +67,14 @@ class TestGeneratorAgent:
             cached_response = self.api_cache.get(full_prompt, model_name, config)
         
         if cached_response:
-            result = json.loads(cached_response)
-        else:
+            try:
+                result = json.loads(cached_response)
+            except json.JSONDecodeError:
+                # If cached response is invalid, regenerate
+                cached_response = None
+                result = None
+        
+        if not cached_response:
             # Wait for rate limit if needed
             if self.rate_limiter:
                 self.rate_limiter.wait_if_needed()
@@ -86,7 +92,33 @@ class TestGeneratorAgent:
             if self.api_cache:
                 self.api_cache.set(full_prompt, model_name, config, response_text)
             
-            result = json.loads(response_text)
+            # Parse JSON with error handling
+            try:
+                # Clean up response text
+                cleaned_text = response_text.strip()
+                
+                # Remove markdown code blocks if present
+                if cleaned_text.startswith("```json"):
+                    cleaned_text = cleaned_text[7:]
+                if cleaned_text.startswith("```"):
+                    cleaned_text = cleaned_text[3:]
+                if cleaned_text.endswith("```"):
+                    cleaned_text = cleaned_text[:-3]
+                
+                cleaned_text = cleaned_text.strip()
+                
+                # Try to find JSON object in the text
+                if '{' in cleaned_text and '}' in cleaned_text:
+                    start = cleaned_text.index('{')
+                    end = cleaned_text.rindex('}') + 1
+                    cleaned_text = cleaned_text[start:end]
+                
+                result = json.loads(cleaned_text)
+            except json.JSONDecodeError as e:
+                # Fallback: return empty test cases
+                print(f"JSON parsing error in test_generator: {e}")
+                print(f"Response text: {response_text[:500]}...")
+                result = {"test_cases": []}
         
         # Convert to TestCase format
         test_cases = []

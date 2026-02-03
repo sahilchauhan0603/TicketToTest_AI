@@ -54,7 +54,7 @@ streamlit run app.py
 > "[Agents complete] Done in 18 seconds! We generated 32 test cases. [Click QA Roadmap] Here's our execution roadmap - Happy Path, Negative Testing, Edge Cases, Regression. [Click Test Cases] Each case has detailed steps, expected results, test data, automation feasibility. [Click Coverage Analysis] The auditor found gaps and asks clarifying questions. [Click Export > Generate Excel > Download] And we export to Excel ready for Jira, Xray, any test tool."
 
 **[3:00-3:45] Business Impact**
-> "The business impact is immediate. What normally takes 2-3 hours took 18 seconds - that's 95% time saved. For a 5-person QA team, this saves $81,000 annually while improving coverage by 30%. Junior QAs become productive on day one. Release cycles accelerate because QA is no longer the bottleneck."
+> "The business impact is immediate. What normally takes 2-3 hours now takes just 4-5 minutes - that's 90% time saved. For a 5-person QA team, this saves $73,000 annually while improving coverage by 30%. Junior QAs become productive on day one. Release cycles accelerate because QA is no longer the bottleneck."
 
 **[3:45-4:15] Technical Excellence**
 > "Technically, this is production-ready. LangGraph for agent orchestration, structured outputs to prevent hallucinations, modular design for customization. Each agent makes autonomous decisions. The system scales horizontally, includes audit trails, and supports cloud or on-premise deployment."
@@ -70,7 +70,7 @@ streamlit run app.py
 **Ticket-to-Test AI**  
 *Agentic QA Copilot for Jira / Azure DevOps*
 
-**Tagline:** "From Ticket to Test Cases in 15 Seconds"
+**Tagline:** "From Ticket to Test Cases in 4-5 Minutes"
 
 ---
 
@@ -101,7 +101,7 @@ streamlit run app.py
 Jira/ADO Ticket → 6 AI Agents → Complete QA Roadmap + Test Cases
 ```
 
-**What You Get in 15 Seconds:**
+**What You Get in 4-5 Minutes:**
 
 1. **📋 QA Execution Roadmap** - Happy Path, Negative, Edge Cases, Regression
 2. **✅ Production-Ready Test Cases** - Detailed steps, priorities, Excel export
@@ -125,40 +125,40 @@ This is **not** a chatbot with clever prompts. This is **true agentic AI** where
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  AGENTIC WORKFLOW (Not Sequential Prompting!)          │
+│  AGENTIC WORKFLOW (Not Sequential Prompting!)           │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
-│  1️⃣ Ticket Reader Agent                                │
-│     • Autonomously extracts requirements               │
-│     • Identifies AC gaps → generates clarifications    │
-│     • Decides: "Is this clear enough to proceed?"      │
+│  1️⃣ Ticket Reader Agent                                 │
+│     • Autonomously extracts requirements                │
+│     • Identifies AC gaps → generates clarifications     │
+│     • Decides: "Is this clear enough to proceed?"       │
 │                                                         │
-│  2️⃣ Context Builder Agent                              │
-│     • Analyzes ticket type → decides testing scope     │
-│     • Identifies impacted modules autonomously         │
-│     • Decides: "What other areas could be affected?"   │
+│  2️⃣ Context Builder Agent                               │ 
+│     • Analyzes ticket type → decides testing scope      │
+│     • Identifies impacted modules autonomously          │
+│     • Decides: "What other areas could be affected?"    │
 │                                                         │
-│  3️⃣ Test Strategy Agent                                │
-│     • Creates QA roadmap based on ticket complexity    │
-│     • Categorizes: Happy Path, Negative, Edge, etc.    │
-│     • Decides: "What testing categories are needed?"   │
+│  3️⃣ Test Strategy Agent                                 │
+│     • Creates QA roadmap based on ticket complexity     │
+│     • Categorizes: Happy Path, Negative, Edge, etc.     │
+│     • Decides: "What testing categories are needed?"    │ 
 │                                                         │
-│  4️⃣ Test Generator Agent                               │
-│     • Generates test cases per category autonomously   │
-│     • Assigns priorities (P0/P1/P2) based on risk      │
-│     • Decides: "Which scenarios are most critical?"    │
+│  4️⃣ Test Generator Agent                                │
+│     • Generates test cases per category autonomously    │
+│     • Assigns priorities (P0/P1/P2) based on risk       │
+│     • Decides: "Which scenarios are most critical?"     │
 │                                                         │
-│  5️⃣ Coverage Auditor Agent (Self-Correction!)          │
-│     • Validates completeness independently             │
-│     • Finds missing scenarios                          │
-│     • Decides: "Are we missing edge cases?"            │
-│     • Generates follow-up questions                    │
-│     • LOOPS BACK if coverage insufficient              │
+│  5️⃣ Coverage Auditor Agent (Self-Correction!)           │
+│     • Validates completeness independently              │
+│     • Finds missing scenarios                           │
+│     • Decides: "Are we missing edge cases?"             │
+│     • Generates follow-up questions                     │
+│     • LOOPS BACK if coverage insufficient               │
 │                                                         │
-│  6️⃣ Sync & Update Agent                                │
-│     • Monitors ticket changes via webhooks             │
-│     • Decides: "Do changes require regeneration?"      │
-│     • Posts updates back to Jira/ADO autonomously      │
+│  6️⃣ Sync & Update Agent                                 │ 
+│     • Monitors ticket changes via webhooks              │
+│     • Decides: "Do changes require regeneration?"       │
+│     • Posts updates back to Jira/ADO autonomously       │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -191,7 +191,7 @@ This is **not** a chatbot with clever prompts. This is **true agentic AI** where
 
 | Metric | Value |
 |--------|-------|
-| Processing Time | 15-20 seconds |
+| Processing Time | 4-5 minutes |
 | Test Cases Generated | 25-40 per ticket |
 | P0/P1 Cases | 8-12 (critical paths) |
 | Coverage Categories | 5-7 categories |
@@ -239,7 +239,7 @@ This is **not** a chatbot with clever prompts. This is **true agentic AI** where
 
 **Time Savings:**
 - Before: 2-3 hours per ticket
-- After: 15 seconds + 5 min review
+- After: 4-5 min + 5 min review
 - **Reduction: 95%**
 
 **For a Team of 5 QAs:**
@@ -358,7 +358,7 @@ ROI:             6,671%
 **Demo Checklist:**
 - [ ] Practice 3x before presentation
 - [ ] Sample ticket loads instantly
-- [ ] Agents complete in <20 seconds
+- [ ] Agents complete in 4-5 minutes
 - [ ] Excel downloads successfully
 - [ ] Narrate what's happening
 
@@ -483,12 +483,12 @@ ROI:             6,671%
 
 ## Key Metrics to Memorize
 
-- **Time saved:** 95% (2-3 hours → 15 seconds)
+- **Time saved:** 90% (2-3 hours → 4-5 minutes)
 - **Annual savings:** $81,000 per 5-person team
 - **Coverage improvement:** +30%
 - **Defect reduction:** -40% leakage
 - **Test cases per ticket:** 25-40 average
-- **Processing time:** 15-20 seconds
+- **Processing time:** 4-5 minutes
 - **Cost per ticket:** $0.05 (Gemini Pro)
 - **ROI:** 6,671%
 - **Market size:** 5M QA engineers

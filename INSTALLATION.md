@@ -28,11 +28,7 @@ python --version
 
 3. **Install dependencies** (only after venv is activated)
    ```powershell
-   # Verify venv is active first:
-   Get-Command python | Select-Object Source
-   # Should show: ...\venv\Scripts\python.exe
-   
-   # Then install:
+   # Install:
    pip install streamlit google-generativeai langchain langgraph python-dotenv openpyxl pandas requests jira azure-devops sqlalchemy python-dateutil tiktoken plotly pydantic
    ```
 
@@ -215,122 +211,6 @@ icacls outputs
 UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14
 ```
 **This is harmless** - the app will work fine. Some dependencies still use Pydantic V1 internally. To eliminate the warning, use Python 3.12 instead of 3.14.
-
----
-
-## Demo Day Checklist
-
-### Before Presentation (30 minutes prior)
-
-- [ ] Virtual environment activated
-- [ ] All dependencies installed (`pip list`)
-- [ ] `.env` file configured with valid API key
-- [ ] Google AI account has API access enabled
-- [ ] Run full system test: `python test_system.py`
-- [ ] Streamlit app tested and running
-- [ ] Sample tickets load correctly
-- [ ] Test case generation works (run full test)
-- [ ] Excel download works
-- [ ] Browser cache cleared
-- [ ] Full screen mode ready (F11)
-- [ ] Close unnecessary applications
-- [ ] Internet connection stable
-- [ ] Have backup plan ready (pre-generated results)
-
-### Backup Plan
-
-**In case of API failures:**
-
-1. Pre-generate results before demo:
-   ```powershell
-   # Save a successful run
-   python -m streamlit run app.py
-   # Generate and save Excel file
-   ```
-
-2. Have ready:
-   - Screenshots of each stage
-   - Pre-downloaded Excel file
-   - Agent workflow diagram
-
-3. Fallback presentation:
-   - Show code structure
-   - Walk through architecture
-   - Display Excel output
-   - Explain what should have happened
-
----
-
-## Production Deployment (Future)
-
-### Next Steps for Real Usage
-
-1. **Jira/Azure DevOps Integration**
-   - Implement real API integrations
-   - Add webhook support for auto-updates
-   - OAuth authentication
-
-2. **Database Layer**
-   - Add SQLite/PostgreSQL for versioning
-   - Store ticket → test case history
-   - Audit trail for compliance
-
-3. **Sync Agent**
-   - Post results back to tickets as comments
-   - Create test case subtasks
-   - Update on ticket changes
-
-4. **Authentication**
-   - User management
-   - Team-based configurations
-   - Role-based access control
-
-5. **Custom Templates**
-   - Organization-specific test case formats
-   - Custom QA strategies per project type
-   - Configurable agent behavior
-
-### Security Considerations
-
-- API key management (use secrets manager)
-- Data encryption in transit and at rest
-- PII masking for sensitive data
-- On-premise deployment option
-- SOC 2 compliance roadmap
-
----
-
-## System Requirements
-
-### Minimum
-- Python 3.9+
-- 4GB RAM
-- Internet connection
-- Modern web browser
-
-### Recommended
-- Python 3.11+
-- 8GB RAM
-- Fast internet (for API calls)
-- Chrome/Firefox latest version
-
----
-
-## Cost Estimation
-
-### Development/Demo
-- **Gemini Pro:** $0.05 per ticket
-- **Gemini Flash:** $0.005 per ticket
-- **Demo costs:** Free tier available (60 requests/min)
-
-### Production Scale
-- **200 tickets/month:** ~$10/month (Gemini Pro) or ~$1/month (Gemini Flash)
-- **1000 tickets/month:** ~$50/month (Gemini Pro) or ~$5/month (Gemini Flash)
-
-**ROI Comparison:**
-- Cost: ~$50/month
-- Savings: $6,250/sprint (for 5-person QA team)
-- **Net benefit: $6,200/sprint**
 
 ---
 

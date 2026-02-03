@@ -2,13 +2,13 @@
 
 **Agentic QA Copilot for Jira / Azure DevOps**
 
-> Automatically converts Jira/Azure DevOps tickets into complete QA execution roadmaps and structured test cases in 15 seconds.
+> Automatically converts Jira/Azure DevOps tickets into complete QA execution roadmaps and structured test cases in 4-5 minutes.
 
 ---
 
 ## 🎯 Overview
 
-**Ticket-to-Test AI** is a production-ready agentic system that transforms manual QA test case writing into an automated, intelligent process. Using six specialized AI agents orchestrated by LangGraph, it analyzes tickets and generates comprehensive test cases with 95% time savings.
+**Ticket-to-Test AI** is a production-ready agentic system that transforms manual QA test case writing into an automated, intelligent process. Using six specialized AI agents orchestrated by LangGraph, it analyzes tickets and generates comprehensive test cases with 90% time savings.
 
 ### The Problem
 QA teams waste **40-70% of their time** on manual test case writing:
@@ -23,7 +23,7 @@ QA teams waste **40-70% of their time** on manual test case writing:
 ### Our Solution
 **One-click transformation:** Ticket → 6 AI Agents → Complete Test Suite
 
-**What you get in 15 seconds:**
+**What you get in 4-5 minutes:**
 1. **QA Execution Roadmap** - Categorized test scenarios (Happy Path, Negative, Edge Cases, Regression)
 2. **Production-Ready Test Cases** - Detailed steps, expected results, test data, priorities
 3. **Coverage Gap Analysis** - Missing scenarios identified with clarification questions
@@ -94,24 +94,10 @@ Six specialized agents working autonomously in sequence:
 
 | Metric | Before | After | Improvement |
 |--------|--------|-------|-------------|
-| Time per ticket | 2-3 hours | 15 seconds + 5 min review | **95% reduction** |
+| Time per ticket | 2-3 hours | 4-5 min + 5 min review | **90% reduction** |
 | Test coverage | ~60% | ~90% | **+30%** |
 | Defect leakage | High | Low | **-40%** |
 | Junior QA productivity | Low | High | **10x faster** |
-
-### ROI Analysis (5-person QA team)
-
-```
-Tickets per sprint:     50
-Hours saved per sprint: 125 hours
-Cost savings:           $6,250/sprint ($50/hr)
-Annual savings:         $81,250
-
-API costs:              $1,200/year
-────────────────────────────────────
-Net benefit:            $80,050/year
-ROI:                    6,671%
-```
 
 ### Strategic Benefits
 - **Faster releases** - QA no longer bottleneck
@@ -124,68 +110,7 @@ ROI:                    6,671%
 
 ## 🚀 Quick Start
 
-> **⚡ Important**: This system is optimized for Gemini API **free tier** (5 requests/minute). See [OPTIMIZATION_GUIDE.md](OPTIMIZATION_GUIDE.md) for complete details.
-
-### Prerequisites
-- Python 3.9 or higher
-- Google Gemini API key ([Get one here](https://makersuite.google.com/app/apikey))
-
-### Installation (5 minutes)
-
-```powershell
-# 1. Navigate to project
-cd c:\THIS_DEVICE\VS_Code\PROJECTS\TicketToTest_AI
-
-# 2. Create virtual environment
-python -m venv venv
-.\venv\Scripts\Activate.ps1  # Windows
-# source venv/bin/activate    # Mac/Linux
-
-# 3. Install dependencies
-pip install -r requirements.txt
-
-# 4. Configure API key
-Copy-Item .env.example .env
-notepad .env  # Add your GOOGLE_API_KEY
-
-# 5. Test installation
-python test_system.py
-
-# 6. Run the demo
-streamlit run app.py
-```
-
-Open http://localhost:8501 in your browser.
-
-### First Demo
-
-**Option 1: Sample Tickets (Quickest)**
-1. Select "Bug Fix" sample ticket
-2. Enter API key in sidebar (if not in .env)
-3. Click "Generate Test Cases"
-4. Watch agents work (~60 seconds with rate limiting)
-5. Review QA roadmap and test cases
-6. Download Excel file
-
-**⏱️ Expected Timing:**
-- **First run**: ~60 seconds (5 API calls with automatic pauses)
-- **Same ticket again**: ~3 seconds (cached, 0 API calls)
-- **Different tickets**: ~1 minute each (rate limit spacing)
-
-**Option 2: Live Integration (Production)**
-1. Configure Jira/Azure DevOps in .env (see below)
-2. Switch to "Live Integration" tab
-3. Enter ticket ID (e.g., PROJ-123)
-4. Click "Fetch Ticket"
-5. Generate test cases
-6. Sync results back to ticket
-
-**Tips:**
-- ✅ **Enable caching** in sidebar settings for faster re-runs
-- ✅ Use `gemini-3-flash-preview` model (free tier)
-- ✅ Process same ticket multiple times to test caching (free!)
-- ⚠️ Free tier: 5 RPM limit - system auto-pauses
-- 📖 Read [OPTIMIZATION_GUIDE.md](OPTIMIZATION_GUIDE.md) for details
+For installation and setup instructions, see [INSTALLATION.md](INSTALLATION.md).
 
 ---
 
@@ -227,102 +152,6 @@ TicketToTest_AI/
 Live Integration** - Fetch tickets directly from Jira or Azure DevOps
 - **Custom Input** - Enter your own ticket details manually
 
-### Real-Time Execution
-- Agent-by-agent progress tracking
-- Live logging of what each agent finds
-- Processing time metrics
-- Error handling with graceful fallback
-
-### Outputs
-- **QA Roadmap** - Organized by test category
-- **Test Cases** - Filterable by priority and category
-- **Coverage Analysis** - Gaps, risks, and clarification questions
-- **Excel Export** - Professional formatting, multiple sheets
-- **Sync Back** - Post results to Jira/ADO as comments, attachments, or subtasks
-
----
-
-## 🔗 Live Integration Setup
-
-### Jira Integration
-
-1. **Get Jira API Token:**
-   - Go to https://id.atlassian.com/manage/api-tokens
-   - Click "Create API token"
-   - Give it a name and copy the token
-
-2. **Configure .env:**
-   ```env
-   JIRA_URL=https://your-domain.atlassian.net
-   JIRA_EMAIL=your-email@example.com
-   JIRA_API_TOKEN=your_api_token_here
-   ```
-
-3. **Features:**
-   - Fetch tickets with all details (description, AC, comments, attachments)
-   - Post test case summary as comment
-   - Attach Excel file to ticket
-   - Create test case subtasks automatically
-
-### Azure DevOps Integration
-
-1. **Get Personal Access Token:**
-   - Go to Azure DevOps → User Settings → Personal Access Tokens
-   - Click "New Token"
-   - Give it Work Items (Read & Write) permissions
-   - Copy the token
-**Live Jira/Azure DevOps integration** ✨
-- Excel export
-- Streamlit demo UI
-- Coverage gap analysis
-- **Sync results back to tickets** ✨
-
-### 🚧 Next (Post-Hackathon)
-- Webhook support for auto-updates
-- Database for versioning & audit trail
-- User authentication & teams
-- Custom templates per organization
-- Batch processing for multiple ticketsds
-   - Post test case summary to work item history
-   - Attach Excel file
-   - Create child test tasks automatically
-
-### Usage
-
-```python
-from integrations.jira_integration import JiraIntegration
-
-# Connect to Jira
-jira = JiraIntegration()
-jira.connect()
-
-# Fetch a ticket
-ticket = jira.fetch_ticket("PROJ-123")
-
-# Generate test cases (using orchestrator)
-# ... 
-
-# Post results back
-jira.post_comment("PROJ-123", "Test cases generated!")
-jira.attach_file("PROJ-123", "test_cases.xlsx", "TestCases.xlsx")
-jira.create_test_subtasks("PROJ-123", test_cases)
-```
-- Error handling with graceful fallback
-
-### Outputs
-- **QA Roadmap** - Organized by test category
-- **Test Cases** - Filterable by priority and category
-- **Coverage Analysis** - Gaps, risks, and clarification questions
-- **Excel Export** - Professional formatting, multiple sheets
-
----
-
-## 📚 Documentation
-
-- **[INSTALLATION.md](INSTALLATION.md)** - Complete setup, deployment, and troubleshooting guide
-- **[PRESENTATION_GUIDE.md](PRESENTATION_GUIDE.md)** - Demo script, pitch deck, Q&A, and video tips
-- **[test_system.py](test_system.py)** - Run this to verify everything works
-
 ---
 
 ## 🎯 Use Cases
@@ -342,71 +171,12 @@ jira.create_test_subtasks("PROJ-123", test_cases)
 
 ---
 
-## 🛣️ Roadmap
-
-### ✅ Current (Hackathon MVP)
-- Multi-agent test generation
-- Sample ticket support
-- Excel export
-- Streamlit demo UI
-- Coverage gap analysis
-
-### 🚧 Next (Post-Hackathon)
-- Live Jira/Azure DevOps integration
-- Webhook support for auto-updates
-- Database for versioning
-- User authentication
-- Custom templates per organization
-
 ### 🔮 Future (3-6 months)
 - Test execution automation (Selenium/Playwright)
 - Integration with Xray, Zephyr, TestRail
 - AI-powered test maintenance
 - Flaky test detection
 - Predictive risk analysis
-
----
-
-## 💰 Cost Analysis
-
-### Development/Demo
-- **Gemini Pro:** ~$0.05 per ticket
-- **Gemini Flash:** ~$0.005 per ticket  
-- **Demo budget:** Free tier available (60 requests/min)
-
-### Production Scale
-- **200 tickets/month:** ~$10/month (Gemini Pro)
-- **1000 tickets/month:** ~$50/month (Gemini Pro)
-
-**vs. Manual Cost:** $6,250/sprint in QA labor
-
----
-
-## 🏆 Hackathon Deliverables
-
-- ✅ **Working Solution** - Fully functional MVP
-- ✅ **Demo Video** - Guidelines in PRESENTATION_GUIDE.md
-- ✅ **Pitch Deck** - Complete content in PRESENTATION_GUIDE.md
-- ✅ **Documentation** - Installation, usage, and architecture
-- ✅ **Sample Data** - 3 realistic ticket scenarios
-
----
-
-## 🤝 Contributing
-
-For hackathon judges and future contributors:
-
-### Code Quality
-- Type hints throughout
-- Docstrings on all classes/functions
-- Modular, testable design
-- Error handling and logging
-
-### Extensibility
-- Add new agents easily
-- Customize prompts per organization
-- Plug in different LLM providers
-- Support additional ticket sources
 
 ---
 
@@ -424,7 +194,7 @@ Built for the **Veersa** Agentic AI Hackathon.
 ## 📞 Contact
 
 **Team:** QualityOps
-**Demo:** http://localhost:8501 (after setup)  
+**Live:** https://ticket-to-test-ai.streamlit.app 
 **Repository:** https://github.com/sahilchauhan0603/TicketToTest_AI
 
 ---

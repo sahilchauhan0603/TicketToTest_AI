@@ -13,6 +13,7 @@ from agents.orchestrator import AgentOrchestrator
 from agents.state import TicketInfo
 from utils.excel_exporter import ExcelExporter
 from utils.sample_tickets import get_sample_ticket, SAMPLE_TICKETS
+from database.db_manager import DatabaseManager
 
 # Load environment variables
 load_dotenv()
@@ -431,7 +432,7 @@ def display_sidebar():
         # Processing Pipeline
         st.markdown("""
         <div class='pipeline-box'>
-            <div class='pipeline-title'>Processing Pipeline - 5-step workflow that the AI agents follows</div>
+            <div class='pipeline-title'>Processing Pipeline -> 5-step workflow that the AI agents follows</div>
             <div class='pipeline-item'>
                 <div>1. Ticket Analysis</div>
                 <div>2. Context Building</div>
@@ -460,6 +461,134 @@ def display_sidebar():
                 st.metric("Test Cases", "-", help="No session active")
             with col2:
                 st.metric("Time", "-", help="No session active")
+        
+        # History Section
+        st.markdown("---")
+        st.markdown("**📚 Generation History**")
+        
+        try:
+            db = DatabaseManager()
+            
+            # Quick stats
+            stats = db.get_statistics()
+            if stats and stats.get('total_generations', 0) > 0:
+                st.caption(f"📊 {stats['total_generations']} total generations | {stats['total_test_cases']} test cases")
+            
+            # Fetch by ID
+            with st.expander("🔍 Load by ID", expanded=False):
+                generation_id = st.text_input(
+                    "Generation ID",
+                    placeholder="Enter full or partial UUID",
+                    help="Paste the generation ID to load specific results",
+                    key="sidebar_gen_id"
+                )
+                
+                if st.button("Load", key="load_by_id_btn"):
+                    if generation_id:
+                        # Try exact match first
+                        loaded_data = db.get_generation_by_id(generation_id)
+                        
+                        # If not found, try partial match
+                        if not loaded_data:
+                            all_gens = db.get_all_generations(limit=1000)
+                            matching = [g for g in all_gens if g['id'].startswith(generation_id)]
+                            if matching:
+                                loaded_data = db.get_generation_by_id(matching[0]['id'])
+                        
+                        if loaded_data:
+                            gen_info = loaded_data['generation']
+                            test_cases = loaded_data['test_cases']
+                            coverage_gaps = loaded_data['coverage_gaps']
+                            qa_roadmap = loaded_data.get('qa_roadmap', {})
+                            clarification_questions = loaded_data.get('clarification_questions', [])
+                            risk_areas = loaded_data.get('risk_areas', [])
+                            
+                            loaded_state = {
+                                'ticket_info': {
+                                    'ticket_id': gen_info['ticket_id'],
+                                    'title': gen_info['ticket_title'],
+                                    'ticket_type': gen_info['ticket_type'],
+                                    'description': gen_info['ticket_description']
+                                },
+                                'test_cases': test_cases,
+                                'coverage_gaps': coverage_gaps,
+                                'qa_roadmap': qa_roadmap,
+                                'clarification_questions': clarification_questions,
+                                'risk_areas': risk_areas,
+                                'processing_time': 0.0
+                            }
+                            
+                            st.session_state.final_state = loaded_state
+                            st.session_state.current_generation_id = gen_info['id']
+                            if gen_info['excel_file_path']:
+                                st.session_state.excel_path = gen_info['excel_file_path']
+                            
+                            st.success(f"✅ Loaded: {gen_info['ticket_id']}")
+                            st.rerun()
+                        else:
+                            st.error("❌ Generation not found")
+                    else:
+                        st.warning("Enter a generation ID")
+            
+            # Recent generations
+            with st.expander("📋 Recent Generations", expanded=False):
+                recent = db.get_all_generations(limit=5)
+                
+                if not recent:
+                    st.caption("No history yet")
+                else:
+                    for gen in recent:
+                        col1, col2, col3 = st.columns([3, 1, 1])
+                        with col1:
+                            st.caption(f"**{gen['ticket_id']}**")
+                            st.caption(f"{gen['timestamp'][:10]} | {gen['total_test_cases']} cases")
+                        with col2:
+                            if st.button("📂", key=f"sidebar_load_{gen['id'][:8]}", help="Load"):
+                                loaded_data = db.get_generation_by_id(gen['id'])
+                                if loaded_data:
+                                    gen_info = loaded_data['generation']
+                                    test_cases = loaded_data['test_cases']
+                                    coverage_gaps = loaded_data['coverage_gaps']
+                                    qa_roadmap = loaded_data.get('qa_roadmap', {})
+                                    clarification_questions = loaded_data.get('clarification_questions', [])
+                                    risk_areas = loaded_data.get('risk_areas', [])
+                                    
+                                    loaded_state = {
+                                        'ticket_info': {
+                                            'ticket_id': gen_info['ticket_id'],
+                                            'title': gen_info['ticket_title'],
+                                            'ticket_type': gen_info['ticket_type'],
+                                            'description': gen_info['ticket_description']
+                                        },
+                                        'test_cases': test_cases,
+                                        'coverage_gaps': coverage_gaps,
+                                        'qa_roadmap': qa_roadmap,
+                                        'clarification_questions': clarification_questions,
+                                        'risk_areas': risk_areas,
+                                        'processing_time': 0.0
+                                    }
+                                    
+                                    st.session_state.final_state = loaded_state
+                                    st.session_state.current_generation_id = gen_info['id']
+                                    if gen_info['excel_file_path']:
+                                        st.session_state.excel_path = gen_info['excel_file_path']
+                                    
+                                    st.rerun()
+                        with col3:
+                            if st.button("🗑️", key=f"sidebar_delete_{gen['id'][:8]}", help="Delete"):
+                                if db.delete_generation(gen['id']):
+                                    st.success("Deleted!")
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to delete")
+                        st.markdown("---")
+                    
+                    if len(recent) == 5:
+                        st.caption("💡 View more in History tab")
+        
+        except Exception as e:
+            st.caption("⚠️ History unavailable")
+            st.caption(f"Error: {str(e)[:50]}")
 
 
 def generate_ticket_details(title: str, ticket_type: str) -> dict:
@@ -511,6 +640,7 @@ Keep it professional and specific to the ticket type."""
         
         # Extract JSON from response
         response_text = response.text.strip()
+        
         # Remove markdown code blocks if present
         if response_text.startswith("```json"):
             response_text = response_text[7:]
@@ -519,8 +649,28 @@ Keep it professional and specific to the ticket type."""
         if response_text.endswith("```"):
             response_text = response_text[:-3]
         
-        result = json.loads(response_text.strip())
-        return result
+        response_text = response_text.strip()
+        
+        # Try to find JSON object in the text
+        if '{' in response_text and '}' in response_text:
+            start = response_text.index('{')
+            end = response_text.rindex('}') + 1
+            response_text = response_text[start:end]
+        
+        try:
+            result = json.loads(response_text)
+            return result
+        except json.JSONDecodeError as je:
+            # Fallback: return a basic structure
+            st.warning(f"Could not parse AI response. Using basic template.")
+            return {
+                "description": f"This ticket involves {title}. Please review and update the requirements.",
+                "acceptance_criteria": [
+                    "Functionality works as expected",
+                    "No errors or warnings",
+                    "User experience is smooth"
+                ]
+            }
     
     except Exception as e:
         st.error(f"Error generating details: {str(e)}")
@@ -595,6 +745,7 @@ def display_ticket_input():
         
         # Store ticket for this tab
         st.session_state.selected_ticket = ticket
+        st.session_state.ticket_source = 'sample'  # Mark as sample ticket
     
     with tab2:
         st.markdown("**Fetch tickets directly from Jira or Azure DevOps:**")
@@ -672,6 +823,9 @@ def display_ticket_input():
                         
                         if ticket:
                             st.success(f"✓ Successfully fetched {ticket_id}")
+                            
+                            # Store ticket source as live integration
+                            st.session_state.ticket_source = 'live'
                             
                             # Display ticket preview
                             with st.expander("📄 Ticket Details", expanded=True):
@@ -799,6 +953,7 @@ def display_ticket_input():
         # Store valid ticket
         if title and description:
             st.session_state.selected_ticket = custom_ticket
+            st.session_state.ticket_source = 'custom'  # Mark as custom ticket
     
     # Return the selected ticket from session state
     return st.session_state.selected_ticket
@@ -894,6 +1049,15 @@ def process_ticket(ticket: TicketInfo):
             wait_text.empty()
             
             st.success(f"✅ Generated {len(final_state['test_cases'])} test cases in {final_state['processing_time']:.2f} seconds!")
+            
+            # Auto-save to database
+            try:
+                db = DatabaseManager()
+                generation_id = db.save_generation(final_state)
+                st.session_state.current_generation_id = generation_id
+                st.info(f"💾 Results saved to history (ID: {generation_id[:8]}...)")
+            except Exception as db_error:
+                st.warning(f"⚠️ Failed to save to history: {str(db_error)}")
             
         except Exception as e:
             st.error(f"❌ Error during processing: {str(e)}")
@@ -1084,6 +1248,15 @@ def display_results(state):
                     # Store path in session for sync
                     st.session_state.excel_path = str(output_path)
                     
+                    # Update database with Excel file path
+                    if hasattr(st.session_state, 'current_generation_id'):
+                        try:
+                            db = DatabaseManager()
+                            # Update existing generation with Excel path
+                            db.update_excel_path(st.session_state.current_generation_id, str(output_path))
+                        except:
+                            pass  # Silent fail if DB update fails
+                    
                     # Download button
                     with open(output_path, 'rb') as f:
                         st.download_button(
@@ -1096,69 +1269,76 @@ def display_results(state):
                     
                     st.success(f"✅ Excel file generated: {filename}")
         
-        with col2:
-            st.markdown("### 🔄 Sync to Jira/Azure DevOps")
-            
-            from integrations.manager import IntegrationManager
-            manager = IntegrationManager()
-            
-            # Check if any integration is configured
-            jira_configured = manager.is_configured('jira')
-            ado_configured = manager.is_configured('azure_devops')
-            
-            if not (jira_configured or ado_configured):
-                st.info("⚠️ Configure Jira or Azure DevOps in .env to sync results back")
-            else:
-                sync_options = []
+        # Only show sync for tickets from live integrations (not sample or custom)
+        if st.session_state.get('ticket_source') == 'live':
+            with col2:
+                st.markdown("### 🔄 Sync to Jira/Azure DevOps")
                 
-                st.markdown("**Sync options:**")
+                from integrations.manager import IntegrationManager
+                manager = IntegrationManager()
                 
-                post_comment = st.checkbox("Post summary comment", value=True)
-                attach_file = st.checkbox("Attach Excel file", value=False)
-                create_subtasks = st.checkbox("Create test subtasks/tasks", value=False)
+                # Check if any integration is configured
+                jira_configured = manager.is_configured('jira')
+                ado_configured = manager.is_configured('azure_devops')
                 
-                if st.button("🔄 Sync to Ticket System", type="secondary"):
-                    with st.spinner("Syncing to ticket system..."):
-                        try:
-                            from agents.sync_agent import SyncAgent
+                if not (jira_configured or ado_configured):
+                    st.info("⚠️ Configure Jira or Azure DevOps in .env to sync results back")
+                else:
+                    sync_options = []
+                    
+                    st.markdown("**Sync options:**")
+                    
+                    post_comment = st.checkbox("Post summary comment", value=True)
+                    attach_file = st.checkbox("Attach Excel file", value=False)
+                    create_subtasks = st.checkbox("Create test subtasks/tasks", value=False)
+                    
+                    if st.button("🔄 Sync to Ticket System", type="secondary"):
+                        with st.spinner("Syncing to ticket system..."):
+                            try:
+                                from agents.sync_agent import SyncAgent
+                                
+                                # Ensure Excel is generated if attaching
+                                excel_path = st.session_state.get('excel_path')
+                                if attach_file and not excel_path:
+                                    # Generate Excel first
+                                    output_dir = Path("outputs")
+                                    output_dir.mkdir(exist_ok=True)
+                                    ticket_id = state['ticket_info']['ticket_id'].replace('/', '_')
+                                    filename = f"TestCases_{ticket_id}_{time.strftime('%Y%m%d_%H%M%S')}.xlsx"
+                                    excel_path = str(output_dir / filename)
+                                    exporter = ExcelExporter()
+                                    exporter.export_test_cases(state, excel_path)
+                                
+                                sync_agent = SyncAgent()
+                                sync_options = {
+                                    'post_comment': post_comment,
+                                    'attach_file': attach_file,
+                                    'excel_path': excel_path,
+                                    'create_subtasks': create_subtasks
+                                }
+                                
+                                state_copy = dict(state)
+                                _, sync_result = sync_agent.process(state_copy, sync_options)
+                                
+                                # Display results
+                                if sync_result["success"]:
+                                    st.success(f"✅ {sync_result['message']}")
+                                    for detail in sync_result["details"]:
+                                        st.write(detail)
+                                    st.balloons()
+                                else:
+                                    st.warning(f"⚠️ {sync_result['message']}")
+                                    for detail in sync_result["details"]:
+                                        st.write(detail)
                             
-                            # Ensure Excel is generated if attaching
-                            excel_path = st.session_state.get('excel_path')
-                            if attach_file and not excel_path:
-                                # Generate Excel first
-                                output_dir = Path("outputs")
-                                output_dir.mkdir(exist_ok=True)
-                                ticket_id = state['ticket_info']['ticket_id'].replace('/', '_')
-                                filename = f"TestCases_{ticket_id}_{time.strftime('%Y%m%d_%H%M%S')}.xlsx"
-                                excel_path = str(output_dir / filename)
-                                exporter = ExcelExporter()
-                                exporter.export_test_cases(state, excel_path)
-                            
-                            sync_agent = SyncAgent()
-                            sync_options = {
-                                'post_comment': post_comment,
-                                'attach_file': attach_file,
-                                'excel_path': excel_path,
-                                'create_subtasks': create_subtasks
-                            }
-                            
-                            state_copy = dict(state)
-                            _, sync_result = sync_agent.process(state_copy, sync_options)
-                            
-                            # Display results
-                            if sync_result["success"]:
-                                st.success(f"✅ {sync_result['message']}")
-                                for detail in sync_result["details"]:
-                                    st.write(detail)
-                                st.balloons()
-                            else:
-                                st.warning(f"⚠️ {sync_result['message']}")
-                                for detail in sync_result["details"]:
-                                    st.write(detail)
-                        
-                        except Exception as e:
-                            st.error(f"❌ Failed to sync: {str(e)}")
-                            st.error("Please check your .env configuration and ensure Jira/Azure DevOps credentials are correct.")
+                            except Exception as e:
+                                st.error(f"❌ Failed to sync: {str(e)}")
+                                st.error("Please check your .env configuration and ensure Jira/Azure DevOps credentials are correct.")
+        else:
+            # For sample and custom tickets, show a message in col2
+            with col2:
+                st.markdown("### 🔄 Sync to Jira/Azure DevOps")
+                st.info("💡 Sync is only available for tickets fetched from live integrations (Jira/Azure DevOps).\n\nSample and custom tickets cannot be synced back.")
 
 
 def main():
