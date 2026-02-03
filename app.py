@@ -1087,7 +1087,7 @@ def display_custom_input():
                 
                 if description:
                     st.markdown("**Description:**")
-                    st.text_area("", description, height=100, disabled=True, label_visibility="collapsed", key="preview_desc")
+                    st.markdown(f"```\n{description}\n```")
                 
                 if acceptance_criteria:
                     st.markdown("**Acceptance Criteria:**")
