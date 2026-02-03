@@ -397,32 +397,60 @@ def display_sidebar():
         st.markdown("<div style='margin-bottom: 1.5rem;'>", unsafe_allow_html=True)
         
         # Custom Credentials (optional - overrides .env)
-        with st.expander("🔧 Custom Credentials (Optional)", expanded=False):
+        with st.expander("🔧 Custom API Credentials (Optional)", expanded=False):
             st.caption("Override default credentials from .env file")
             
             custom_api_key = st.text_input(
-                "Custom API Key",
+                "Google Gemini API Key *",
                 type="password",
-                value="",
-                placeholder="Leave empty to use .env value",
-                help="Enter your own Google Gemini API key to override the .env configuration"
+                value=st.session_state.get('custom_api_key', ''),
+                placeholder="Enter your Google Gemini API key",
+                help="Enter your own Google Gemini API key to override the .env configuration (Required)",
+                key="input_custom_api_key"
             )
             
             custom_model = st.text_input(
-                "Custom Model",
-                value="",
+                "Model Name",
+                value=st.session_state.get('custom_model', ''),
                 placeholder="e.g., gemini-2.0-flash-exp",
-                help="Enter a custom model name to override the .env configuration"
+                help="Enter a custom model name (Optional, defaults to gemini-2.0-flash-exp)",
+                key="input_custom_model"
             )
             
-            if custom_api_key or custom_model:
-                st.caption("✅ Using custom credentials")
+            # Check if API key is filled (model is optional)
+            api_key_filled = bool(custom_api_key and custom_api_key.strip())
+            
+            # Buttons in columns
+            col_api1, col_api2 = st.columns(2)
+            with col_api1:
+                if st.button("💾 Save API Config", key="save_api", disabled=not api_key_filled, use_container_width=True):
+                    st.session_state.custom_api_key = custom_api_key.strip()
+                    st.session_state.custom_model = custom_model.strip() if custom_model else ""
+                    st.success("✅ API credentials saved! This overrides .env credentials.")
+                    st.rerun()
+            
+            with col_api2:
+                has_custom_api = bool(st.session_state.get('custom_api_key'))
+                if st.button("🗑️ Clear Config", key="clear_api", disabled=not has_custom_api, use_container_width=True):
+                    st.session_state.pop('custom_api_key', None)
+                    st.session_state.pop('custom_model', None)
+                    st.info("🔄 Cleared custom credentials. Now using .env file.")
+                    st.rerun()
+            
+            if not api_key_filled:
+                st.caption("⚠️ API Key is required")
+            
+            # Status indicator
+            if st.session_state.get('custom_api_key'):
+                st.caption("✅ Using your custom API credentials (overrides .env)")
+            elif os.getenv('GOOGLE_API_KEY'):
+                st.caption("ℹ️ Using API credentials from .env file")
             else:
-                st.caption("ℹ️ Using credentials from .env file")
+                st.caption("⚠️ No API credentials found")
         
         # Determine which credentials to use (custom overrides .env)
-        api_key = custom_api_key if custom_api_key else os.getenv("GOOGLE_API_KEY", "")
-        model_name = custom_model if custom_model else os.getenv("LLM_MODEL", "gemini-2.0-flash-exp")
+        api_key = st.session_state.get('custom_api_key') or os.getenv("GOOGLE_API_KEY", "")
+        model_name = st.session_state.get('custom_model') or os.getenv("LLM_MODEL", "gemini-2.0-flash-exp")
         
         # Update environment with selected credentials
         if api_key:
@@ -435,84 +463,130 @@ def display_sidebar():
             st.caption("Connect your Jira account to fetch and sync tickets")
             
             jira_url = st.text_input(
-                "Jira URL",
+                "Jira URL *",
                 value=st.session_state.get('jira_url', ''),
                 placeholder="https://your-domain.atlassian.net",
-                help="Your Jira instance URL",
+                help="Your Jira instance URL (Required)",
                 key="input_jira_url"
             )
             
             jira_email = st.text_input(
-                "Jira Email",
+                "Jira Email *",
                 value=st.session_state.get('jira_email', ''),
                 placeholder="your-email@example.com",
-                help="Your Jira account email",
+                help="Your Jira account email (Required)",
                 key="input_jira_email"
             )
             
             jira_token = st.text_input(
-                "Jira API Token",
+                "Jira API Token *",
                 type="password",
                 value=st.session_state.get('jira_token', ''),
                 placeholder="Enter your Jira API token",
-                help="Create at https://id.atlassian.com/manage/api-tokens",
+                help="Create at https://id.atlassian.com/manage/api-tokens (Required)",
                 key="input_jira_token"
             )
             
-            # Save button
-            if st.button("💾 Save Jira Config", key="save_jira"):
-                st.session_state.jira_url = jira_url
-                st.session_state.jira_email = jira_email
-                st.session_state.jira_token = jira_token
-                st.success("✅ Jira configuration saved!")
-                st.rerun()
+            # Check if all required fields are filled
+            jira_all_filled = bool(jira_url and jira_url.strip() and 
+                                  jira_email and jira_email.strip() and 
+                                  jira_token and jira_token.strip())
             
+            # Buttons in columns
+            col_jira1, col_jira2 = st.columns(2)
+            with col_jira1:
+                if st.button("💾 Save Jira Config", key="save_jira", disabled=not jira_all_filled, use_container_width=True):
+                    st.session_state.jira_url = jira_url.strip()
+                    st.session_state.jira_email = jira_email.strip()
+                    st.session_state.jira_token = jira_token.strip()
+                    st.success("✅ Jira configuration saved! This overrides .env credentials.")
+                    st.rerun()
+            
+            with col_jira2:
+                has_custom_jira = bool(st.session_state.get('jira_url') or st.session_state.get('jira_email') or st.session_state.get('jira_token'))
+                if st.button("🗑️ Clear Config", key="clear_jira", disabled=not has_custom_jira, use_container_width=True):
+                    # Clear custom credentials from session state
+                    st.session_state.pop('jira_url', None)
+                    st.session_state.pop('jira_email', None)
+                    st.session_state.pop('jira_token', None)
+                    st.info("🔄 Cleared custom credentials. Now using .env file.")
+                    st.rerun()
+            
+            if not jira_all_filled:
+                st.caption("⚠️ All fields marked with * are required")
+            
+            # Status indicator
             if st.session_state.get('jira_url') and st.session_state.get('jira_token'):
-                st.caption("✅ Jira configured")
+                st.caption("✅ Using your custom Jira credentials (overrides .env)")
+            elif os.getenv('JIRA_URL') and os.getenv('JIRA_API_TOKEN'):
+                st.caption("ℹ️ Using Jira credentials from .env file")
             else:
-                st.caption("ℹ️ No Jira configuration")
+                st.caption("⚠️ No Jira configuration found")
         
         # Azure DevOps Integration
         with st.expander("🔗 Azure DevOps Integration", expanded=False):
             st.caption("Connect your Azure DevOps account")
             
             ado_org = st.text_input(
-                "Organization URL",
+                "Organization URL *",
                 value=st.session_state.get('ado_org', ''),
                 placeholder="https://dev.azure.com/your-org",
-                help="Your Azure DevOps organization URL",
+                help="Your Azure DevOps organization URL (Required)",
                 key="input_ado_org"
             )
             
             ado_pat = st.text_input(
-                "Personal Access Token",
+                "Personal Access Token *",
                 type="password",
                 value=st.session_state.get('ado_pat', ''),
                 placeholder="Enter your PAT",
-                help="Create in Azure DevOps → User Settings → Personal Access Tokens",
+                help="Create in Azure DevOps → User Settings → Personal Access Tokens (Required)",
                 key="input_ado_pat"
             )
             
             ado_project = st.text_input(
-                "Project Name",
+                "Project Name *",
                 value=st.session_state.get('ado_project', ''),
                 placeholder="your-project-name",
-                help="Your Azure DevOps project name",
+                help="Your Azure DevOps project name (Required)",
                 key="input_ado_project"
             )
             
-            # Save button
-            if st.button("💾 Save Azure Config", key="save_ado"):
-                st.session_state.ado_org = ado_org
-                st.session_state.ado_pat = ado_pat
-                st.session_state.ado_project = ado_project
-                st.success("✅ Azure DevOps configuration saved!")
-                st.rerun()
+            # Check if all required fields are filled
+            ado_all_filled = bool(ado_org and ado_org.strip() and 
+                                 ado_pat and ado_pat.strip() and 
+                                 ado_project and ado_project.strip())
             
+            # Buttons in columns
+            col_ado1, col_ado2 = st.columns(2)
+            with col_ado1:
+                if st.button("💾 Save Azure Config", key="save_ado", disabled=not ado_all_filled, use_container_width=True):
+                    st.session_state.ado_org = ado_org.strip()
+                    st.session_state.ado_pat = ado_pat.strip()
+                    st.session_state.ado_project = ado_project.strip()
+                    st.success("✅ Azure DevOps configuration saved! This overrides .env credentials.")
+                    st.rerun()
+            
+            with col_ado2:
+                has_custom_ado = bool(st.session_state.get('ado_org') or st.session_state.get('ado_pat') or st.session_state.get('ado_project'))
+                if st.button("🗑️ Clear Config", key="clear_ado", disabled=not has_custom_ado, use_container_width=True):
+                    # Clear custom credentials from session state
+                    st.session_state.pop('ado_org', None)
+                    st.session_state.pop('ado_pat', None)
+                    st.session_state.pop('ado_project', None)
+                    st.info("🔄 Cleared custom credentials. Now using .env file.")
+                    st.rerun()
+            
+            if not ado_all_filled:
+                st.caption("⚠️ All fields marked with * are required")
+            
+            # Status indicator
             if st.session_state.get('ado_org') and st.session_state.get('ado_pat'):
-                st.caption("✅ Azure DevOps configured")
+                st.caption("✅ Using your custom Azure DevOps credentials (overrides .env)")
+            elif os.getenv('AZURE_DEVOPS_ORG') and os.getenv('AZURE_DEVOPS_PAT'):
+                st.caption("ℹ️ Using Azure DevOps credentials from .env file")
             else:
-                st.caption("ℹ️ No Azure DevOps configuration")
+                st.caption("⚠️ No Azure DevOps configuration found")
         
         # Rate limit configuration
         with st.expander("⏱️ Rate Limit Settings", expanded=False):
@@ -1299,15 +1373,13 @@ def process_ticket(ticket: TicketInfo):
                         elif agent_name == "coverage_auditor":
                             st.write(f"Coverage gaps: {len(state.get('coverage_gaps', []))}")
         
-        # Show info about rate limits
-        rate_info = st.info("⏱️ **Note**: Using free tier limits (5 API calls/minute). System will pause ~12 seconds between agents to respect rate limits.")
-        
-        # Process ticket
+        # Process ticket with spinner
         try:
-            final_state = st.session_state.orchestrator.process_ticket(
-                ticket,
-                progress_callback=progress_callback
-            )
+            with st.spinner("Processing ticket through AI agents..."):
+                final_state = st.session_state.orchestrator.process_ticket(
+                    ticket,
+                    progress_callback=progress_callback
+                )
             
             st.session_state.final_state = final_state
             st.session_state.processing = False
