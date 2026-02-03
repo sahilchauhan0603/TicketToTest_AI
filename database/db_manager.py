@@ -363,7 +363,7 @@ class DatabaseManager:
     
     def get_statistics(self) -> Dict[str, Any]:
         """
-        Get database statistics
+        Get database statistics (only counts test cases from existing generations)
         
         Returns:
             Dictionary with statistics
@@ -376,23 +376,29 @@ class DatabaseManager:
             cursor.execute("SELECT COUNT(*) FROM generations")
             total_generations = cursor.fetchone()[0]
             
-            # Total test cases
-            cursor.execute("SELECT COUNT(*) FROM test_cases")
+            # Total test cases (only from existing generations)
+            cursor.execute("""
+                SELECT COUNT(*) 
+                FROM test_cases tc
+                INNER JOIN generations g ON tc.generation_id = g.id
+            """)
             total_test_cases = cursor.fetchone()[0]
             
-            # Test cases by priority
+            # Test cases by priority (only from existing generations)
             cursor.execute("""
-                SELECT priority, COUNT(*) as count
-                FROM test_cases
-                GROUP BY priority
+                SELECT tc.priority, COUNT(*) as count
+                FROM test_cases tc
+                INNER JOIN generations g ON tc.generation_id = g.id
+                GROUP BY tc.priority
             """)
             by_priority = {row[0]: row[1] for row in cursor.fetchall()}
             
-            # Test cases by category
+            # Test cases by category (only from existing generations)
             cursor.execute("""
-                SELECT category, COUNT(*) as count
-                FROM test_cases
-                GROUP BY category
+                SELECT tc.category, COUNT(*) as count
+                FROM test_cases tc
+                INNER JOIN generations g ON tc.generation_id = g.id
+                GROUP BY tc.category
                 ORDER BY count DESC
                 LIMIT 10
             """)
@@ -410,3 +416,42 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Failed to get statistics: {e}")
             return {}
+    
+    def cleanup_orphaned_records(self) -> int:
+        """
+        Remove orphaned test cases and coverage gaps that have no parent generation.
+        This is a safeguard in case CASCADE delete doesn't work properly.
+        
+        Returns:
+            Number of orphaned records cleaned up
+        """
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # Delete orphaned test cases
+            cursor.execute("""
+                DELETE FROM test_cases 
+                WHERE generation_id NOT IN (SELECT id FROM generations)
+            """)
+            test_cases_deleted = cursor.rowcount
+            
+            # Delete orphaned coverage gaps
+            cursor.execute("""
+                DELETE FROM coverage_gaps 
+                WHERE generation_id NOT IN (SELECT id FROM generations)
+            """)
+            coverage_gaps_deleted = cursor.rowcount
+            
+            conn.commit()
+            conn.close()
+            
+            total_deleted = test_cases_deleted + coverage_gaps_deleted
+            if total_deleted > 0:
+                logger.info(f"Cleaned up {test_cases_deleted} orphaned test cases and {coverage_gaps_deleted} orphaned coverage gaps")
+            
+            return total_deleted
+            
+        except Exception as e:
+            logger.error(f"Failed to cleanup orphaned records: {e}")
+            return 0

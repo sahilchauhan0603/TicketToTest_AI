@@ -1344,6 +1344,18 @@ def display_results(state):
 def main():
     """Main application"""
     init_session_state()
+    
+    # Cleanup orphaned database records on startup (run once per session)
+    if 'db_cleaned' not in st.session_state:
+        try:
+            db = DatabaseManager()
+            orphaned_count = db.cleanup_orphaned_records()
+            if orphaned_count > 0:
+                st.toast(f"🧹 Cleaned up {orphaned_count} orphaned database records", icon="✅")
+            st.session_state.db_cleaned = True
+        except Exception as e:
+            pass  # Silent fail, don't block app startup
+    
     display_header()
     display_sidebar()
     
