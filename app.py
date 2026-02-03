@@ -430,6 +430,90 @@ def display_sidebar():
         if model_name:
             os.environ["LLM_MODEL"] = model_name
         
+        # Jira/Azure DevOps Integration Credentials
+        with st.expander("🔗 Jira Integration", expanded=False):
+            st.caption("Connect your Jira account to fetch and sync tickets")
+            
+            jira_url = st.text_input(
+                "Jira URL",
+                value=st.session_state.get('jira_url', ''),
+                placeholder="https://your-domain.atlassian.net",
+                help="Your Jira instance URL",
+                key="input_jira_url"
+            )
+            
+            jira_email = st.text_input(
+                "Jira Email",
+                value=st.session_state.get('jira_email', ''),
+                placeholder="your-email@example.com",
+                help="Your Jira account email",
+                key="input_jira_email"
+            )
+            
+            jira_token = st.text_input(
+                "Jira API Token",
+                type="password",
+                value=st.session_state.get('jira_token', ''),
+                placeholder="Enter your Jira API token",
+                help="Create at https://id.atlassian.com/manage/api-tokens",
+                key="input_jira_token"
+            )
+            
+            # Save button
+            if st.button("💾 Save Jira Config", key="save_jira"):
+                st.session_state.jira_url = jira_url
+                st.session_state.jira_email = jira_email
+                st.session_state.jira_token = jira_token
+                st.success("✅ Jira configuration saved!")
+                st.rerun()
+            
+            if st.session_state.get('jira_url') and st.session_state.get('jira_token'):
+                st.caption("✅ Jira configured")
+            else:
+                st.caption("ℹ️ No Jira configuration")
+        
+        # Azure DevOps Integration
+        with st.expander("🔗 Azure DevOps Integration", expanded=False):
+            st.caption("Connect your Azure DevOps account")
+            
+            ado_org = st.text_input(
+                "Organization URL",
+                value=st.session_state.get('ado_org', ''),
+                placeholder="https://dev.azure.com/your-org",
+                help="Your Azure DevOps organization URL",
+                key="input_ado_org"
+            )
+            
+            ado_pat = st.text_input(
+                "Personal Access Token",
+                type="password",
+                value=st.session_state.get('ado_pat', ''),
+                placeholder="Enter your PAT",
+                help="Create in Azure DevOps → User Settings → Personal Access Tokens",
+                key="input_ado_pat"
+            )
+            
+            ado_project = st.text_input(
+                "Project Name",
+                value=st.session_state.get('ado_project', ''),
+                placeholder="your-project-name",
+                help="Your Azure DevOps project name",
+                key="input_ado_project"
+            )
+            
+            # Save button
+            if st.button("💾 Save Azure Config", key="save_ado"):
+                st.session_state.ado_org = ado_org
+                st.session_state.ado_pat = ado_pat
+                st.session_state.ado_project = ado_project
+                st.success("✅ Azure DevOps configuration saved!")
+                st.rerun()
+            
+            if st.session_state.get('ado_org') and st.session_state.get('ado_pat'):
+                st.caption("✅ Azure DevOps configured")
+            else:
+                st.caption("ℹ️ No Azure DevOps configuration")
+        
         # Rate limit configuration
         with st.expander("⏱️ Rate Limit Settings", expanded=False):
             st.markdown("**Free Tier Limits (Gemini Flash)**")
@@ -898,7 +982,23 @@ def display_live_integration():
     """Display live integration input"""
     
     from integrations.manager import IntegrationManager
-    manager = IntegrationManager()
+    
+    # Build custom credentials from session state
+    custom_creds = {}
+    if st.session_state.get('jira_url') and st.session_state.get('jira_token'):
+        custom_creds['jira'] = {
+            'url': st.session_state.get('jira_url'),
+            'email': st.session_state.get('jira_email'),
+            'token': st.session_state.get('jira_token')
+        }
+    if st.session_state.get('ado_org') and st.session_state.get('ado_pat'):
+        custom_creds['azure_devops'] = {
+            'org': st.session_state.get('ado_org'),
+            'pat': st.session_state.get('ado_pat'),
+            'project': st.session_state.get('ado_project')
+        }
+    
+    manager = IntegrationManager(custom_credentials=custom_creds)
     
     # Integration selection
     col1, col2 = st.columns(2)
@@ -920,34 +1020,52 @@ def display_live_integration():
     
     # Configuration instructions
     if not is_configured:
-        with st.expander("⚙️ Setup Instructions", expanded=False):
+        with st.expander("⚙️ Setup Instructions", expanded=True):
             if integration_type == "Jira":
                 st.markdown("""
-                **Configure Jira in .env file:**
+                **Configure Jira Integration:**
+                
+                👈 Use the sidebar to configure your Jira credentials:
+                1. Expand "🔗 Jira Integration" in the sidebar
+                2. Enter your Jira URL (e.g., https://your-domain.atlassian.net)
+                3. Enter your Jira email
+                4. Enter your Jira API token
+                5. Click "💾 Save Jira Config"
+                
+                **How to get your Jira API Token:**
+                1. Go to https://id.atlassian.com/manage/api-tokens
+                2. Click "Create API token"
+                3. Copy the token and paste it in the sidebar
+                
+                *Alternatively, you can still use .env file:*
                 ```
                 JIRA_URL=https://your-domain.atlassian.net
                 JIRA_EMAIL=your-email@example.com
                 JIRA_API_TOKEN=your_api_token
                 ```
-                
-                **Get API Token:**
-                1. Go to https://id.atlassian.com/manage/api-tokens
-                2. Create API token
-                3. Copy and paste into .env
                 """)
             else:
                 st.markdown("""
-                **Configure Azure DevOps in .env file:**
+                **Configure Azure DevOps Integration:**
+                
+                👈 Use the sidebar to configure your Azure DevOps credentials:
+                1. Expand "🔗 Azure DevOps Integration" in the sidebar
+                2. Enter your Organization URL (e.g., https://dev.azure.com/your-org)
+                3. Enter your Personal Access Token
+                4. Enter your Project Name
+                5. Click "💾 Save Azure Config"
+                
+                **How to get your Personal Access Token:**
+                1. Go to Azure DevOps → User Settings → Personal Access Tokens
+                2. Create new token with Work Items (Read & Write) permission
+                3. Copy the token and paste it in the sidebar
+                
+                *Alternatively, you can still use .env file:*
                 ```
                 AZURE_DEVOPS_ORG=https://dev.azure.com/your-org
                 AZURE_DEVOPS_PAT=your_personal_access_token
                 AZURE_DEVOPS_PROJECT=your-project-name
                 ```
-                
-                **Get Personal Access Token:**
-                1. Go to Azure DevOps → User Settings → Personal Access Tokens
-                2. Create new token with Work Items (Read & Write)
-                3. Copy and paste into .env
                 """)
     
     # Ticket ID input
@@ -1424,14 +1542,30 @@ def display_results(state):
                 st.markdown("### 🔄 Sync to Jira/Azure DevOps")
                 
                 from integrations.manager import IntegrationManager
-                manager = IntegrationManager()
+                
+                # Build custom credentials from session state
+                custom_creds = {}
+                if st.session_state.get('jira_url') and st.session_state.get('jira_token'):
+                    custom_creds['jira'] = {
+                        'url': st.session_state.get('jira_url'),
+                        'email': st.session_state.get('jira_email'),
+                        'token': st.session_state.get('jira_token')
+                    }
+                if st.session_state.get('ado_org') and st.session_state.get('ado_pat'):
+                    custom_creds['azure_devops'] = {
+                        'org': st.session_state.get('ado_org'),
+                        'pat': st.session_state.get('ado_pat'),
+                        'project': st.session_state.get('ado_project')
+                    }
+                
+                manager = IntegrationManager(custom_credentials=custom_creds)
                 
                 # Check if any integration is configured
                 jira_configured = manager.is_configured('jira')
                 ado_configured = manager.is_configured('azure_devops')
                 
                 if not (jira_configured or ado_configured):
-                    st.info("⚠️ Configure Jira or Azure DevOps in .env to sync results back")
+                    st.info("⚠️ Configure Jira or Azure DevOps in the sidebar to sync results back")
                 else:
                     sync_options = []
                     
@@ -1458,7 +1592,8 @@ def display_results(state):
                                     exporter = ExcelExporter()
                                     exporter.export_test_cases(state, excel_path)
                                 
-                                sync_agent = SyncAgent()
+                                # Pass custom credentials to SyncAgent
+                                sync_agent = SyncAgent(custom_credentials=custom_creds)
                                 sync_options = {
                                     'post_comment': post_comment,
                                     'attach_file': attach_file,

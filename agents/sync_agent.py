@@ -16,9 +16,15 @@ class SyncAgent:
     Agent that syncs results back to ticket systems
     """
     
-    def __init__(self):
+    def __init__(self, custom_credentials: Optional[Dict] = None):
+        """
+        Initialize Sync Agent
+        
+        Args:
+            custom_credentials: Optional custom credentials for integrations
+        """
         self.name = "SyncAgent"
-        self.integration_manager = IntegrationManager()
+        self.integration_manager = IntegrationManager(custom_credentials=custom_credentials)
     
     def process(self, state: AgentState, sync_options: Optional[Dict] = None) -> tuple[AgentState, Dict]:
         """
