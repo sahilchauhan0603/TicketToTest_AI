@@ -192,6 +192,13 @@ st.markdown("""
         min-height: 2.5rem;
     }
     
+    /* Smaller buttons in sidebar config sections */
+    section[data-testid="stSidebar"] .stButton > button {
+        padding: 0.35rem 0.75rem !important;
+        font-size: 0.85rem !important;
+        min-height: 1.8rem !important;
+    }
+    
     /* Sidebar - Light Theme */
     section[data-testid="stSidebar"] {
         background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
@@ -397,7 +404,7 @@ def display_sidebar():
         st.markdown("<div style='margin-bottom: 1.5rem;'>", unsafe_allow_html=True)
         
         # Custom Credentials (optional - overrides .env)
-        with st.expander("🔧 Custom API Credentials (Optional)", expanded=False):
+        with st.expander("API Credentials (Optional)", expanded=False):
             st.caption("Override default credentials from .env file")
             
             custom_api_key = st.text_input(
@@ -423,7 +430,7 @@ def display_sidebar():
             # Buttons in columns
             col_api1, col_api2 = st.columns(2)
             with col_api1:
-                if st.button("💾 Save API Config", key="save_api", disabled=not api_key_filled, use_container_width=True):
+                if st.button("Save", key="save_api", disabled=not api_key_filled, use_container_width=True):
                     st.session_state.custom_api_key = custom_api_key.strip()
                     st.session_state.custom_model = custom_model.strip() if custom_model else ""
                     st.success("✅ API credentials saved! This overrides .env credentials.")
@@ -431,10 +438,10 @@ def display_sidebar():
             
             with col_api2:
                 has_custom_api = bool(st.session_state.get('custom_api_key'))
-                if st.button("🗑️ Clear Config", key="clear_api", disabled=not has_custom_api, use_container_width=True):
+                if st.button("Clear", key="clear_api", disabled=not has_custom_api, use_container_width=True):
                     st.session_state.pop('custom_api_key', None)
                     st.session_state.pop('custom_model', None)
-                    st.info("🔄 Cleared custom credentials. Now using .env file.")
+                    st.info("Cleared custom credentials. Now using .env file.")
                     st.rerun()
             
             if not api_key_filled:
@@ -459,7 +466,7 @@ def display_sidebar():
             os.environ["LLM_MODEL"] = model_name
         
         # Jira/Azure DevOps Integration Credentials
-        with st.expander("🔗 Jira Integration", expanded=False):
+        with st.expander("Jira Integration", expanded=False):
             st.caption("Connect your Jira account to fetch and sync tickets")
             
             jira_url = st.text_input(
@@ -495,21 +502,21 @@ def display_sidebar():
             # Buttons in columns
             col_jira1, col_jira2 = st.columns(2)
             with col_jira1:
-                if st.button("💾 Save Jira Config", key="save_jira", disabled=not jira_all_filled, use_container_width=True):
+                if st.button("Save", key="save_jira", disabled=not jira_all_filled, use_container_width=True):
                     st.session_state.jira_url = jira_url.strip()
                     st.session_state.jira_email = jira_email.strip()
                     st.session_state.jira_token = jira_token.strip()
-                    st.success("✅ Jira configuration saved! This overrides .env credentials.")
+                    st.success("Jira configuration saved! This overrides .env credentials.")
                     st.rerun()
             
             with col_jira2:
                 has_custom_jira = bool(st.session_state.get('jira_url') or st.session_state.get('jira_email') or st.session_state.get('jira_token'))
-                if st.button("🗑️ Clear Config", key="clear_jira", disabled=not has_custom_jira, use_container_width=True):
+                if st.button("Clear", key="clear_jira", disabled=not has_custom_jira, use_container_width=True):
                     # Clear custom credentials from session state
                     st.session_state.pop('jira_url', None)
                     st.session_state.pop('jira_email', None)
                     st.session_state.pop('jira_token', None)
-                    st.info("🔄 Cleared custom credentials. Now using .env file.")
+                    st.info("Cleared custom credentials. Now using .env file.")
                     st.rerun()
             
             if not jira_all_filled:
@@ -524,7 +531,7 @@ def display_sidebar():
                 st.caption("⚠️ No Jira configuration found")
         
         # Azure DevOps Integration
-        with st.expander("🔗 Azure DevOps Integration", expanded=False):
+        with st.expander("Azure DevOps Integration", expanded=False):
             st.caption("Connect your Azure DevOps account")
             
             ado_org = st.text_input(
@@ -560,21 +567,21 @@ def display_sidebar():
             # Buttons in columns
             col_ado1, col_ado2 = st.columns(2)
             with col_ado1:
-                if st.button("💾 Save Azure Config", key="save_ado", disabled=not ado_all_filled, use_container_width=True):
+                if st.button("Save", key="save_ado", disabled=not ado_all_filled, use_container_width=True):
                     st.session_state.ado_org = ado_org.strip()
                     st.session_state.ado_pat = ado_pat.strip()
                     st.session_state.ado_project = ado_project.strip()
-                    st.success("✅ Azure DevOps configuration saved! This overrides .env credentials.")
+                    st.success("Azure DevOps configuration saved! This overrides .env credentials.")
                     st.rerun()
             
             with col_ado2:
                 has_custom_ado = bool(st.session_state.get('ado_org') or st.session_state.get('ado_pat') or st.session_state.get('ado_project'))
-                if st.button("🗑️ Clear Config", key="clear_ado", disabled=not has_custom_ado, use_container_width=True):
+                if st.button("Clear", key="clear_ado", disabled=not has_custom_ado, use_container_width=True):
                     # Clear custom credentials from session state
                     st.session_state.pop('ado_org', None)
                     st.session_state.pop('ado_pat', None)
                     st.session_state.pop('ado_project', None)
-                    st.info("🔄 Cleared custom credentials. Now using .env file.")
+                    st.info("Cleared custom credentials. Now using .env file.")
                     st.rerun()
             
             if not ado_all_filled:
@@ -589,7 +596,7 @@ def display_sidebar():
                 st.caption("⚠️ No Azure DevOps configuration found")
         
         # Rate limit configuration
-        with st.expander("⏱️ Rate Limit Settings", expanded=False):
+        with st.expander("Rate Limit Settings", expanded=False):
             st.markdown("**Free Tier Limits (Gemini Flash)**")
             st.caption("• 5 requests per minute (RPM)")
             st.caption("• Each ticket uses 5 API calls (one per agent)")
@@ -652,7 +659,7 @@ def display_sidebar():
                 st.caption(f"📊 {stats['total_generations']} total generations | {stats['total_test_cases']} test cases")
             
             # Fetch by ID
-            with st.expander("🔍 Load by ID", expanded=False):
+            with st.expander("Search by ID", expanded=False):
                 generation_id = st.text_input(
                     "Generation ID",
                     placeholder="Enter full or partial UUID",
@@ -709,7 +716,7 @@ def display_sidebar():
                         st.warning("Enter a generation ID")
             
             # Recent generations
-            with st.expander("📋 Recent Generations", expanded=False):
+            with st.expander("Recent Generations", expanded=False):
                 recent = db.get_all_generations(limit=5)
                 
                 if not recent:
@@ -721,7 +728,7 @@ def display_sidebar():
                             st.caption(f"**{gen['ticket_id']}**")
                             st.caption(f"{gen['timestamp'][:10]} | {gen['total_test_cases']} cases")
                         with col2:
-                            if st.button("📂", key=f"sidebar_load_{gen['id'][:8]}", help="Load"):
+                            if st.button("🔃", key=f"sidebar_load_{gen['id'][:8]}", help="Load"):
                                 loaded_data = db.get_generation_by_id(gen['id'])
                                 if loaded_data:
                                     st.session_state.loaded_from_history = True  # Skip steps 1 & 2
@@ -755,7 +762,7 @@ def display_sidebar():
                                     
                                     st.rerun()
                         with col3:
-                            if st.button("🗑️", key=f"sidebar_delete_{gen['id'][:8]}", help="Delete"):
+                            if st.button("🚮", key=f"sidebar_delete_{gen['id'][:8]}", help="Delete"):
                                 if db.delete_generation(gen['id']):
                                     st.success("Deleted!")
                                     st.rerun()

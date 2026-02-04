@@ -276,7 +276,7 @@ class DatabaseManager:
     
     def delete_generation(self, generation_id: str) -> bool:
         """
-        Delete a generation and all its associated data
+        Delete a generation and all its associated data (including Excel file)
         
         Args:
             generation_id: UUID of the generation to delete
@@ -287,6 +287,22 @@ class DatabaseManager:
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
+            
+            # First, get the Excel file path before deleting the record
+            cursor.execute(
+                "SELECT excel_file_path FROM generations WHERE id = ?",
+                (generation_id,)
+            )
+            result = cursor.fetchone()
+            excel_file_path = result[0] if result else None
+            
+            # Delete the Excel file from outputs folder if it exists
+            if excel_file_path and os.path.exists(excel_file_path):
+                try:
+                    os.remove(excel_file_path)
+                    logger.info(f"Deleted Excel file: {excel_file_path}")
+                except Exception as file_error:
+                    logger.warning(f"Failed to delete Excel file {excel_file_path}: {file_error}")
             
             # Delete generation (CASCADE will delete test_cases and coverage_gaps)
             cursor.execute("DELETE FROM generations WHERE id = ?", (generation_id,))
