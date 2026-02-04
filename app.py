@@ -1259,7 +1259,7 @@ def display_live_integration():
                     else:
                         st.error(f"Failed to fetch ticket {ticket_id}. Check the ID and try again.")
                 else:
-                    st.error(f"Failed to connect to {integration_type}. Check your credentials in .env")
+                    st.error(f"Failed to connect to {integration_type}. Check your credentials.")
     
     # Display ticket preview if available (outside button handler so it persists)
     if st.session_state.get('selected_ticket') and st.session_state.get('ticket_source') == 'live':
@@ -1474,9 +1474,14 @@ def process_ticket(ticket: TicketInfo):
                 st.warning("⚠️ Generation cancelled by user")
                 st.rerun()
     
+    # Handle generate button click
     if not st.session_state.processing and 'generate_btn' in locals() and generate_btn:
         st.session_state.processing = True
         st.session_state.cancel_requested = False
+        st.rerun()  # Force immediate rerun to show cancel button
+    
+    # Only process if we're in processing state and haven't been cancelled
+    if st.session_state.processing and not st.session_state.cancel_requested:
         
         # Progress tracking
         progress_bar = st.progress(0)
@@ -1557,6 +1562,9 @@ def process_ticket(ticket: TicketInfo):
             except Exception as db_error:
                 st.warning(f"⚠️ Failed to save to history: {str(db_error)}")
             
+            # Rerun to update button state
+            st.rerun()
+            
         except Exception as e:
             st.session_state.processing = False
             if st.session_state.cancel_requested:
@@ -1568,6 +1576,7 @@ def process_ticket(ticket: TicketInfo):
                 st.error(get_user_friendly_error(e))
                 status_text.markdown("**❌ Processing Failed**")
             wait_text.empty()
+            st.rerun()  # Rerun to reset button state
             return None
     
     return st.session_state.final_state
