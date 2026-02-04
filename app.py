@@ -18,6 +18,15 @@ from database.db_manager import DatabaseManager
 # Load environment variables
 load_dotenv()
 
+# Helper functions for credential management
+def get_current_api_key():
+    """Get current API key (custom overrides .env)"""
+    return st.session_state.get('custom_api_key') or os.getenv("GOOGLE_API_KEY", "")
+
+def get_current_model():
+    """Get current model name (custom overrides .env)"""
+    return st.session_state.get('custom_model') or os.getenv("LLM_MODEL", "gemini-2.0-flash-exp")
+
 # Page configuration
 st.set_page_config(
     page_title="Ticket-to-Test AI",
@@ -340,10 +349,14 @@ def init_session_state():
     """Initialize session state variables"""
     if 'orchestrator' not in st.session_state:
         st.session_state.orchestrator = None
+    if 'orchestrator_api_key' not in st.session_state:
+        st.session_state.orchestrator_api_key = None
     if 'final_state' not in st.session_state:
         st.session_state.final_state = None
     if 'processing' not in st.session_state:
         st.session_state.processing = False
+    if 'cancel_requested' not in st.session_state:
+        st.session_state.cancel_requested = False
     if 'selected_ticket' not in st.session_state:
         st.session_state.selected_ticket = None
     if 'excel_path' not in st.session_state:
@@ -441,6 +454,9 @@ def display_sidebar():
                 if st.button("Clear", key="clear_api", disabled=not has_custom_api, use_container_width=True):
                     st.session_state.pop('custom_api_key', None)
                     st.session_state.pop('custom_model', None)
+                    # Clear orchestrator to force reinitialization with new credentials
+                    st.session_state.orchestrator = None
+                    st.session_state.orchestrator_api_key = None
                     st.info("Cleared custom credentials. Now using .env file.")
                     st.rerun()
             
@@ -455,15 +471,8 @@ def display_sidebar():
             else:
                 st.caption("⚠️ No API credentials found")
         
-        # Determine which credentials to use (custom overrides .env)
-        api_key = st.session_state.get('custom_api_key') or os.getenv("GOOGLE_API_KEY", "")
-        model_name = st.session_state.get('custom_model') or os.getenv("LLM_MODEL", "gemini-2.0-flash-exp")
-        
-        # Update environment with selected credentials
-        if api_key:
-            os.environ["GOOGLE_API_KEY"] = api_key
-        if model_name:
-            os.environ["LLM_MODEL"] = model_name
+        # Note: Custom credentials are handled via session state
+        # They override .env values when retrieved using helper functions below
         
         # Jira/Azure DevOps Integration Credentials
         with st.expander("Jira Integration", expanded=False):
@@ -762,7 +771,7 @@ def display_sidebar():
                                     
                                     st.rerun()
                         with col3:
-                            if st.button("🚮", key=f"sidebar_delete_{gen['id'][:8]}", help="Delete"):
+                            if st.button("🗑️", key=f"sidebar_delete_{gen['id'][:8]}", help="Delete"):
                                 if db.delete_generation(gen['id']):
                                     st.success("Deleted!")
                                     st.rerun()
@@ -778,6 +787,52 @@ def display_sidebar():
             st.caption(f"Error: {str(e)[:50]}")
 
 
+def get_user_friendly_error(error: Exception) -> str:
+    """
+    Convert technical error messages into user-friendly messages
+    
+    Args:
+        error: The exception object
+    
+    Returns:
+        User-friendly error message
+    """
+    error_str = str(error).lower()
+    
+    # API Key errors
+    if "api_key_invalid" in error_str or "api key not valid" in error_str:
+        return "❌ Invalid API key. Please check your API key in the sidebar."
+    
+    # Rate limit errors
+    if "resource_exhausted" in error_str or "rate limit" in error_str or "quota" in error_str:
+        return "⏳ Rate limit reached. Please wait a moment and try again."
+    
+    # Permission errors
+    if "permission" in error_str or "forbidden" in error_str:
+        return "🔒 Permission denied. Please check your API key permissions."
+    
+    # Network errors
+    if "connection" in error_str or "network" in error_str or "timeout" in error_str:
+        return "🌐 Connection error. Please check your internet connection."
+    
+    # Model errors
+    if "model not found" in error_str:
+        return "❌ Model not available. Please check the model name in settings."
+    
+    # Generic API errors
+    if "400" in error_str:
+        return "❌ Invalid request. Please check your input and try again."
+    if "401" in error_str or "unauthorized" in error_str:
+        return "🔑 Authentication failed. Please verify your API key."
+    if "429" in error_str:
+        return "⏳ Too many requests. Please wait and try again."
+    if "500" in error_str or "503" in error_str:
+        return "⚠️ Service temporarily unavailable. Please try again later."
+    
+    # Default message for unknown errors
+    return "❌ An error occurred. Please try again or check your configuration."
+
+
 def generate_ticket_details(title: str, ticket_type: str) -> dict:
     """
     Generate description and acceptance criteria using AI based on title
@@ -789,13 +844,13 @@ def generate_ticket_details(title: str, ticket_type: str) -> dict:
     Returns:
         Dictionary with 'description' and 'acceptance_criteria' keys
     """
-    api_key = os.getenv("GOOGLE_API_KEY")
+    api_key = get_current_api_key()
     if not api_key:
         return None
     
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel(os.getenv("LLM_MODEL", "gemini-2.0-flash-exp"))
+        model = genai.GenerativeModel(get_current_model())
         
         prompt = f"""You are a technical product manager. Given a ticket title and type, generate a detailed description and acceptance criteria.
 
@@ -860,7 +915,7 @@ Keep it professional and specific to the ticket type."""
             }
     
     except Exception as e:
-        st.error(f"Error generating details: {str(e)}")
+        st.error(get_user_friendly_error(e))
         return None
 
 
@@ -1006,9 +1061,9 @@ def display_sample_tickets():
         "Choose sample ticket type:",
         ["bug_fix", "feature", "api_change"],
         format_func=lambda x: {
-            "bug_fix": "🐛 Bug Fix - Login with Special Characters",
-            "feature": "✨ Feature - PDF Export for Reports",
-            "api_change": "🔧 API Change - Profile Picture Upload"
+            "bug_fix": "Bug Fix - Login with Special Characters",
+            "feature": "Feature - PDF Export for Reports",
+            "api_change": "API Change - Profile Picture Upload"
         }[x]
     )
     
@@ -1156,8 +1211,22 @@ def display_live_integration():
         help=f"Enter the {integration_type} ticket/work item ID"
     )
     
-    # Fetch button
-    if st.button("🔍 Fetch Ticket", type="secondary", disabled=not is_configured):
+    # Fetch and Clear buttons
+    col_live1, col_live2 = st.columns([3, 1])
+    with col_live1:
+        fetch_btn = st.button("🔍 Fetch Ticket", type="secondary", disabled=not is_configured, use_container_width=True)
+    with col_live2:
+        has_live_ticket = bool(st.session_state.get('selected_ticket') and st.session_state.get('ticket_source') == 'live')
+        if st.button("Clear", key="clear_live_integration", disabled=not has_live_ticket, use_container_width=True):
+            # Clear the fetched ticket
+            if 'selected_ticket' in st.session_state:
+                st.session_state.pop('selected_ticket', None)
+            if 'ticket_source' in st.session_state:
+                st.session_state.pop('ticket_source', None)
+            st.info("Cleared fetched ticket.")
+            st.rerun()
+    
+    if fetch_btn:
         if not ticket_id:
             st.error("Please enter a ticket ID")
         else:
@@ -1172,36 +1241,39 @@ def display_live_integration():
                         
                         # Store ticket source as live integration
                         st.session_state.ticket_source = 'live'
-                        
-                        # Display ticket preview
-                        with st.expander("📄 Ticket Details", expanded=True):
-                            col1, col2, col3 = st.columns(3)
-                            with col1:
-                                st.markdown(f"**ID:** {ticket['ticket_id']}")
-                                st.markdown(f"**Type:** {ticket['ticket_type']}")
-                            with col2:
-                                st.markdown(f"**Priority:** {ticket['priority']}")
-                                st.markdown(f"**Status:** {ticket['status']}")
-                            with col3:
-                                st.markdown(f"**Attachments:** {len(ticket['attachments'])}")
-                                st.markdown(f"**Comments:** {len(ticket['comments'])}")
-                            
-                            st.markdown("**Title:**")
-                            st.info(ticket['title'])
-                            
-                            st.markdown("**Description:**")
-                            st.text_area("", ticket['description'], height=150, disabled=True, label_visibility="collapsed")
-                            
-                            if ticket['acceptance_criteria']:
-                                st.markdown("**Acceptance Criteria:**")
-                                for ac in ticket['acceptance_criteria']:
-                                    st.markdown(f"- {ac}")
-                        
                         st.session_state.selected_ticket = ticket
+                        # Rerun to update UI and enable Clear button
+                        st.rerun()
                     else:
                         st.error(f"Failed to fetch ticket {ticket_id}. Check the ID and try again.")
                 else:
                     st.error(f"Failed to connect to {integration_type}. Check your credentials in .env")
+    
+    # Display ticket preview if available (outside button handler so it persists)
+    if st.session_state.get('selected_ticket') and st.session_state.get('ticket_source') == 'live':
+        ticket = st.session_state.selected_ticket
+        with st.expander("📄 Ticket Details", expanded=True):
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.markdown(f"**ID:** {ticket['ticket_id']}")
+                st.markdown(f"**Type:** {ticket['ticket_type']}")
+            with col2:
+                st.markdown(f"**Priority:** {ticket['priority']}")
+                st.markdown(f"**Status:** {ticket['status']}")
+            with col3:
+                st.markdown(f"**Attachments:** {len(ticket['attachments'])}")
+                st.markdown(f"**Comments:** {len(ticket['comments'])}")
+            
+            st.markdown("**Title:**")
+            st.info(ticket['title'])
+            
+            st.markdown("**Description:**")
+            st.text_area("", ticket['description'], height=150, disabled=True, label_visibility="collapsed", key="live_ticket_description")
+            
+            if ticket['acceptance_criteria']:
+                st.markdown("**Acceptance Criteria:**")
+                for ac in ticket['acceptance_criteria']:
+                    st.markdown(f"- {ac}")
     
     return st.session_state.selected_ticket
 
@@ -1224,7 +1296,7 @@ def display_custom_input():
         col_btn1, col_btn2 = st.columns([3, 1])
         with col_btn2:
             if st.button("✨ AI Generate", type="secondary", help="Auto-generate description and acceptance criteria using AI"):
-                if not os.getenv("GOOGLE_API_KEY"):
+                if not get_current_api_key():
                     st.error("⚠️ Please enter your Google Gemini API key in the sidebar.")
                 else:
                     with st.spinner("🤖 AI is generating ticket details..."):
@@ -1293,11 +1365,31 @@ def display_custom_input():
                     for ac in acceptance_criteria:
                         st.markdown(f"- {ac}")
         
-        # Validation
+        # Validation and Action buttons
         if not title:
             st.warning("⚠️ Please enter a ticket title to proceed.")
         if not description:
             st.warning("⚠️ Please enter a description to proceed.")
+        
+        # Clear button for custom input
+        col_custom1, col_custom2 = st.columns([3, 1])
+        with col_custom2:
+            # Enable if there's valid current form data OR a stored custom ticket
+            has_custom_data = (title and description) or (st.session_state.get('selected_ticket') and st.session_state.get('ticket_source') == 'custom')
+            if st.button("Clear", key="clear_custom_input", disabled=not has_custom_data, use_container_width=True, help="Clear the custom ticket and reset the form"):
+                # Clear custom ticket from session state
+                st.session_state.pop('selected_ticket', None)
+                st.session_state.pop('ticket_source', None)
+                # Clear all form fields by removing from session state
+                st.session_state.pop('custom_title', None)
+                st.session_state.pop('custom_description', None)
+                st.session_state.pop('custom_ac', None)
+                st.session_state.pop('custom_ticket_id', None)
+                st.session_state.pop('custom_type', None)
+                st.session_state.pop('custom_priority', None)
+                st.session_state.pop('custom_status', None)
+                st.info("Cleared custom ticket.")
+                st.rerun()
         
         # Store valid ticket
         if title and description:
@@ -1314,22 +1406,32 @@ def process_ticket(ticket: TicketInfo):
     st.caption("Multi-agent system analyzes ticket and generates comprehensive test cases")
     
     # Check API key
-    if not os.getenv("GOOGLE_API_KEY"):
+    current_api_key = get_current_api_key()
+    if not current_api_key:
         st.error("⚠️ Please enter your Google Gemini API key in the sidebar to continue.")
         return None
     
-    # Initialize orchestrator
-    if st.session_state.orchestrator is None:
+    # Initialize orchestrator or reinitialize if API key changed
+    if (st.session_state.orchestrator is None or 
+        st.session_state.get('orchestrator_api_key') != current_api_key):
         with st.spinner("Initializing agent orchestrator..."):
-            st.session_state.orchestrator = AgentOrchestrator(os.getenv("GOOGLE_API_KEY"))
+            st.session_state.orchestrator = AgentOrchestrator(current_api_key)
+            st.session_state.orchestrator_api_key = current_api_key
     
-    # Process button
+    # Single button that toggles between Generate and Cancel
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        generate_btn = st.button("🚀 Generate Test Cases", type="primary", use_container_width=True)
+        if not st.session_state.processing:
+            generate_btn = st.button("🚀 Generate Test Cases", type="primary", use_container_width=True)
+        else:
+            cancel_btn = st.button("⏹️ Cancel Processing", type="secondary", use_container_width=True)
+            if cancel_btn:
+                st.session_state.cancel_requested = True
+                st.warning("⚠️ Cancellation requested... stopping after current agent completes")
     
-    if generate_btn:
+    if not st.session_state.processing and 'generate_btn' in locals() and generate_btn:
         st.session_state.processing = True
+        st.session_state.cancel_requested = False
         
         # Progress tracking
         progress_bar = st.progress(0)
@@ -1346,20 +1448,24 @@ def process_ticket(ticket: TicketInfo):
         ]
         
         agent_names = {
-            "ticket_reader": "📖 Ticket Reader Agent",
-            "context_builder": "🏗️ Context Builder Agent",
-            "test_strategy": "🎯 Test Strategy Agent",
-            "test_generator": "✏️ Test Generator Agent",
-            "coverage_auditor": "🔍 Coverage Auditor Agent"
+            "ticket_reader": "Ticket Reader Agent",
+            "context_builder": "Context Builder Agent",
+            "test_strategy": "Test Strategy Agent",
+            "test_generator": "Test Generator Agent",
+            "coverage_auditor": "Coverage Auditor Agent"
         }
         
         # Counter for agent execution
         current_agent_idx = [0]
         
         def progress_callback(agent_name: str, state):
+            # Check if cancellation was requested
+            if st.session_state.cancel_requested:
+                raise Exception("Processing cancelled by user")
+            
             if agent_name in agents:
                 idx = agents.index(agent_name)
-                progress = (idx + 1) / len(agents)
+                progress = (idx) / len(agents)
                 progress_bar.progress(progress)
                 status_text.markdown(f"**Processing:** {agent_names.get(agent_name, agent_name)}")
                 wait_text.empty()  # Clear wait message
@@ -1380,7 +1486,7 @@ def process_ticket(ticket: TicketInfo):
                         elif agent_name == "coverage_auditor":
                             st.write(f"Coverage gaps: {len(state.get('coverage_gaps', []))}")
         
-        # Process ticket with spinner
+        # Process ticket
         try:
             with st.spinner("Processing ticket through AI agents..."):
                 final_state = st.session_state.orchestrator.process_ticket(
@@ -1407,8 +1513,13 @@ def process_ticket(ticket: TicketInfo):
                 st.warning(f"⚠️ Failed to save to history: {str(db_error)}")
             
         except Exception as e:
-            st.error(f"❌ Error during processing: {str(e)}")
+            if st.session_state.cancel_requested:
+                st.warning("⚠️ Processing cancelled by user")
+                status_text.markdown("**❌ Processing Cancelled**")
+            else:
+                st.error(get_user_friendly_error(e))
             st.session_state.processing = False
+            st.session_state.cancel_requested = False
             return None
     
     return st.session_state.final_state
