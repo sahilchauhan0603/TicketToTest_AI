@@ -357,6 +357,10 @@ def init_session_state():
         st.session_state.processing = False
     if 'cancel_requested' not in st.session_state:
         st.session_state.cancel_requested = False
+    if 'ai_generating' not in st.session_state:
+        st.session_state.ai_generating = False
+    if 'ai_cancel_requested' not in st.session_state:
+        st.session_state.ai_cancel_requested = False
     if 'selected_ticket' not in st.session_state:
         st.session_state.selected_ticket = None
     if 'excel_path' not in st.session_state:
@@ -669,22 +673,26 @@ def display_sidebar():
             
             # Fetch by ID
             with st.expander("Search by ID", expanded=False):
-                generation_id = st.text_input(
-                    "Generation ID",
-                    placeholder="Enter full or partial UUID",
-                    help="Paste the generation ID to load specific results",
+                search_id = st.text_input(
+                    "Generation ID or Ticket ID",
+                    placeholder="Enter generation UUID or ticket ID",
+                    help="Search by generation ID (UUID) or ticket ID",
                     key="sidebar_gen_id"
                 )
                 
                 if st.button("Load", key="load_by_id_btn"):
-                    if generation_id:
-                        # Try exact match first
-                        loaded_data = db.get_generation_by_id(generation_id)
+                    if search_id:
+                        # Try exact match first (generation ID)
+                        loaded_data = db.get_generation_by_id(search_id)
                         
-                        # If not found, try partial match
+                        # If not found, try partial generation ID match
                         if not loaded_data:
                             all_gens = db.get_all_generations(limit=1000)
-                            matching = [g for g in all_gens if g['id'].startswith(generation_id)]
+                            # Try matching generation ID
+                            matching = [g for g in all_gens if g['id'].startswith(search_id)]
+                            if not matching:
+                                # Try matching ticket ID
+                                matching = [g for g in all_gens if g['ticket_id'].lower() == search_id.lower()]
                             if matching:
                                 loaded_data = db.get_generation_by_id(matching[0]['id'])
                         
@@ -720,9 +728,9 @@ def display_sidebar():
                             st.success(f"✅ Loaded: {gen_info['ticket_id']}")
                             st.rerun()
                         else:
-                            st.error("❌ Generation not found")
+                            st.error("❌ No matching generation or ticket found")
                     else:
-                        st.warning("Enter a generation ID")
+                        st.warning("Enter a generation ID or ticket ID")
             
             # Recent generations
             with st.expander("Recent Generations", expanded=False):
@@ -732,12 +740,12 @@ def display_sidebar():
                     st.caption("No history yet")
                 else:
                     for gen in recent:
-                        col1, col2, col3 = st.columns([3, 1, 1])
+                        col1, col2, col3 = st.columns([3, 1.5, 1.5])
                         with col1:
                             st.caption(f"**{gen['ticket_id']}**")
                             st.caption(f"{gen['timestamp'][:10]} | {gen['total_test_cases']} cases")
                         with col2:
-                            if st.button("🔃", key=f"sidebar_load_{gen['id'][:8]}", help="Load"):
+                            if st.button("🔃", key=f"sidebar_load_{gen['id'][:8]}", help="Load", use_container_width=True):
                                 loaded_data = db.get_generation_by_id(gen['id'])
                                 if loaded_data:
                                     st.session_state.loaded_from_history = True  # Skip steps 1 & 2
@@ -771,7 +779,7 @@ def display_sidebar():
                                     
                                     st.rerun()
                         with col3:
-                            if st.button("🗑️", key=f"sidebar_delete_{gen['id'][:8]}", help="Delete"):
+                            if st.button("🗑️", key=f"sidebar_delete_{gen['id'][:8]}", help="Delete", use_container_width=True):
                                 if db.delete_generation(gen['id']):
                                     st.success("Deleted!")
                                     st.rerun()
@@ -847,6 +855,10 @@ def generate_ticket_details(title: str, ticket_type: str) -> dict:
     api_key = get_current_api_key()
     if not api_key:
         return None
+    
+    # Check for cancellation at the start
+    if st.session_state.get('ai_cancel_requested', False):
+        raise Exception("AI generation cancelled by user")
     
     try:
         genai.configure(api_key=api_key)
@@ -1295,18 +1307,43 @@ def display_custom_input():
     if title:
         col_btn1, col_btn2 = st.columns([3, 1])
         with col_btn2:
-            if st.button("✨ AI Generate", type="secondary", help="Auto-generate description and acceptance criteria using AI"):
-                if not get_current_api_key():
-                    st.error("⚠️ Please enter your Google Gemini API key in the sidebar.")
-                else:
-                    with st.spinner("🤖 AI is generating ticket details..."):
-                        result = generate_ticket_details(title, ticket_type)
-                        if result:
-                            # Update session state with widget keys so content appears in text areas
-                            st.session_state.custom_description = result.get('description', '')
-                            st.session_state.custom_ac = '\n'.join(result.get('acceptance_criteria', []))
-                            st.success("✅ Details generated! You can edit them below.")
-                            st.rerun()
+            if not st.session_state.get('ai_generating', False):
+                if st.button("✨ AI Generate", type="secondary", help="Auto-generate description and acceptance criteria using AI", key="ai_gen_btn"):
+                    if not get_current_api_key():
+                        st.error("⚠️ Please enter your Google Gemini API key in the sidebar.")
+                    else:
+                        st.session_state.ai_generating = True
+                        st.session_state.ai_cancel_requested = False
+                        st.rerun()
+            else:
+                if st.button("⏹️ Cancel", type="secondary", help="Stop AI generation", key="ai_cancel_btn"):
+                    st.session_state.ai_cancel_requested = True
+                    st.session_state.ai_generating = False
+                    st.warning("⚠️ AI generation cancelled")
+                    st.rerun()
+        
+        # Process AI generation if requested
+        if st.session_state.get('ai_generating', False) and not st.session_state.get('ai_cancel_requested', False):
+            with st.spinner("🤖 AI is generating ticket details..."):
+                try:
+                    result = generate_ticket_details(title, ticket_type)
+                    if result:
+                        # Update session state with widget keys so content appears in text areas
+                        st.session_state.custom_description = result.get('description', '')
+                        st.session_state.custom_ac = '\n'.join(result.get('acceptance_criteria', []))
+                        st.session_state.ai_generating = False
+                        st.success("✅ Details generated! You can edit them below.")
+                        st.rerun()
+                    else:
+                        st.session_state.ai_generating = False
+                        st.rerun()
+                except Exception as e:
+                    st.session_state.ai_generating = False
+                    if "cancelled" in str(e).lower():
+                        st.warning("⚠️ AI generation cancelled")
+                    else:
+                        st.error(get_user_friendly_error(e))
+                    st.rerun()
         
         description = st.text_area(
             "Description", 
@@ -1422,12 +1459,20 @@ def process_ticket(ticket: TicketInfo):
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if not st.session_state.processing:
-            generate_btn = st.button("🚀 Generate Test Cases", type="primary", use_container_width=True)
+            generate_btn = st.button("🚀 Generate Test Cases", type="primary", use_container_width=True, key="generate_test_cases")
         else:
-            cancel_btn = st.button("⏹️ Cancel Processing", type="secondary", use_container_width=True)
+            # Show processing indicator
+            st.markdown("""
+            <div style='text-align: center; padding: 0.5rem; background: linear-gradient(90deg, #ff6b6b, #feca57); border-radius: 4px; margin-bottom: 1rem;'>
+                <p style='margin: 0; color: white; font-weight: 600;'>⚙️ Processing in progress...</p>
+            </div>
+            """, unsafe_allow_html=True)
+            cancel_btn = st.button("⏹️ Cancel Generation", type="secondary", use_container_width=True, key="cancel_generation")
             if cancel_btn:
                 st.session_state.cancel_requested = True
-                st.warning("⚠️ Cancellation requested... stopping after current agent completes")
+                st.session_state.processing = False
+                st.warning("⚠️ Generation cancelled by user")
+                st.rerun()
     
     if not st.session_state.processing and 'generate_btn' in locals() and generate_btn:
         st.session_state.processing = True
@@ -1513,13 +1558,16 @@ def process_ticket(ticket: TicketInfo):
                 st.warning(f"⚠️ Failed to save to history: {str(db_error)}")
             
         except Exception as e:
+            st.session_state.processing = False
             if st.session_state.cancel_requested:
+                st.session_state.cancel_requested = False
                 st.warning("⚠️ Processing cancelled by user")
                 status_text.markdown("**❌ Processing Cancelled**")
+                progress_bar.progress(0.0)
             else:
                 st.error(get_user_friendly_error(e))
-            st.session_state.processing = False
-            st.session_state.cancel_requested = False
+                status_text.markdown("**❌ Processing Failed**")
+            wait_text.empty()
             return None
     
     return st.session_state.final_state
@@ -1897,6 +1945,12 @@ def main():
                     st.info(generation_date[:16] if generation_date else 'N/A')
             else:
                 st.info('N/A')
+        
+        # Display Generation ID if available
+        if generation_id:
+            with st.expander("🔑 Generation ID", expanded=False):
+                st.code(generation_id, language=None)
+                st.caption("Use this ID to reload these exact results later")
         
         # Ticket title and description
         if ticket_info.get('title'):
