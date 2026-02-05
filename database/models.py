@@ -21,6 +21,7 @@ class Generation:
     total_test_cases: int = 0
     metadata: Optional[str] = None
     created_at: Optional[str] = None
+    ticket_acceptance_criteria: Optional[str] = None
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary"""

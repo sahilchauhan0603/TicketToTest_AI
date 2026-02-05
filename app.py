@@ -703,13 +703,22 @@ def display_sidebar():
                             qa_roadmap = loaded_data.get('qa_roadmap', {})
                             clarification_questions = loaded_data.get('clarification_questions', [])
                             risk_areas = loaded_data.get('risk_areas', [])
+
+                             # Parse acceptance criteria from JSON if present
+                            acceptance_criteria = []
+                            if gen_info.get('ticket_acceptance_criteria'):
+                                try:
+                                    acceptance_criteria = json.loads(gen_info['ticket_acceptance_criteria'])
+                                except:
+                                    acceptance_criteria = []
                             
                             loaded_state = {
                                 'ticket_info': {
                                     'ticket_id': gen_info['ticket_id'],
                                     'title': gen_info['ticket_title'],
                                     'ticket_type': gen_info['ticket_type'],
-                                    'description': gen_info['ticket_description']
+                                    'description': gen_info['ticket_description'],
+                                    'acceptance_criteria': acceptance_criteria
                                 },
                                 'test_cases': test_cases,
                                 'coverage_gaps': coverage_gaps,
@@ -755,13 +764,22 @@ def display_sidebar():
                                     qa_roadmap = loaded_data.get('qa_roadmap', {})
                                     clarification_questions = loaded_data.get('clarification_questions', [])
                                     risk_areas = loaded_data.get('risk_areas', [])
+
+                                     # Parse acceptance criteria from JSON if present
+                                    acceptance_criteria = []
+                                    if gen_info.get('ticket_acceptance_criteria'):
+                                        try:
+                                            acceptance_criteria = json.loads(gen_info['ticket_acceptance_criteria'])
+                                        except:
+                                            acceptance_criteria = []
                                     
                                     loaded_state = {
                                         'ticket_info': {
                                             'ticket_id': gen_info['ticket_id'],
                                             'title': gen_info['ticket_title'],
                                             'ticket_type': gen_info['ticket_type'],
-                                            'description': gen_info['ticket_description']
+                                            'description': gen_info['ticket_description'],
+                                            'acceptance_criteria': acceptance_criteria
                                         },
                                         'test_cases': test_cases,
                                         'coverage_gaps': coverage_gaps,
@@ -1635,7 +1653,7 @@ def display_results(state):
         
         roadmap = state.get('qa_roadmap', {})
         for category, items in roadmap.items():
-            with st.expander(f"📂 {category}", expanded=True):
+            with st.expander(f"📂 {category} ({len(items)})", expanded=True):
                 for item in items:
                     st.markdown(f"- {item}")
     
@@ -1704,29 +1722,25 @@ def display_results(state):
         # Coverage gaps
         gaps = state.get('coverage_gaps', [])
         if gaps:
-            st.markdown("### ⚠️ Coverage Gaps Identified")
-            for gap in gaps:
-                st.warning(gap)
+            with st.expander(f"⚠️ Coverage Gaps Identified ({len(gaps)})", expanded=True):
+                for gap in gaps:
+                    st.warning(gap)
         else:
             st.success("✅ Excellent coverage! No gaps identified.")
-        
-        st.divider()
         
         # Clarification questions
         questions = state.get('clarification_questions', [])
         if questions:
-            st.markdown("### ❓ Clarification Questions")
-            for q in questions:
-                st.info(q)
-        
-        st.divider()
+            with st.expander(f"❓ Clarification Questions ({len(questions)})", expanded=False):
+                for q in questions:
+                    st.info(q)
         
         # Risk areas
         risks = state.get('risk_areas', [])
         if risks:
-            st.markdown("### ⚡ Risk Areas")
-            for risk in risks:
-                st.markdown(f"- {risk}")
+            with st.expander(f"⚡ Risk Areas ({len(risks)})", expanded=False):
+                for risk in risks:
+                    st.markdown(f"- {risk}")
     
     with tab4:
         st.subheader("Export & Sync")
@@ -1869,7 +1883,7 @@ def display_results(state):
             # For sample and custom tickets, show a message in col2
             with col2:
                 st.markdown("### 🔄 Sync to Jira/Azure DevOps")
-                st.info("💡 Sync is only available for tickets fetched from live integrations (Jira/Azure DevOps).\n\nSample and custom tickets cannot be synced back.")
+                st.info("Sync is only available for tickets fetched from live integrations (Jira/Azure DevOps).\n\nSample and custom tickets cannot be synced back.")
 
 
 def main():
@@ -1928,7 +1942,7 @@ def main():
             except:
                 pass
         
-        st.markdown("### 📋 Ticket Information")
+        st.markdown("### Ticket Information")
         
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -1957,7 +1971,7 @@ def main():
         
         # Display Generation ID if available
         if generation_id:
-            with st.expander("🔑 Generation ID", expanded=False):
+            with st.expander("Generation ID", expanded=False):
                 st.code(generation_id, language=None)
                 st.caption("Use this ID to reload these exact results later")
         
@@ -1967,8 +1981,13 @@ def main():
             st.success(ticket_info['title'])
         
         if ticket_info.get('description'):
-            with st.expander("📄 View Ticket Description", expanded=False):
+            with st.expander("View Ticket Description", expanded=False):
                 st.markdown(ticket_info['description'])
+
+        if ticket_info.get('acceptance_criteria'):
+            with st.expander("View Ticket Acceptance Criteria", expanded=False):
+                for i, criterion in enumerate(ticket_info['acceptance_criteria'], 1):
+                    st.markdown(f"{i}. {criterion}")
         
         st.divider()
         display_results(st.session_state.final_state)

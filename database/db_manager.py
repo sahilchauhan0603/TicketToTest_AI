@@ -77,14 +77,15 @@ class DatabaseManager:
             cursor.execute("""
                 INSERT INTO generations 
                 (id, ticket_id, ticket_title, ticket_type, ticket_description, 
-                 timestamp, excel_file_path, status, total_test_cases, metadata)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 ticket_acceptance_criteria, timestamp, excel_file_path, status, total_test_cases, metadata)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 generation_id,
                 ticket_info.get('ticket_id', ''),
                 ticket_info.get('title', ''),
                 ticket_info.get('ticket_type', ''),
                 ticket_info.get('description', ''),
+                json.dumps(ticket_info.get('acceptance_criteria', [])),
                 datetime.now().isoformat(),
                 excel_file_path,
                 'completed',

@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS generations (
     ticket_title TEXT NOT NULL,
     ticket_type TEXT,
     ticket_description TEXT,
+    ticket_acceptance_criteria TEXT,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     excel_file_path TEXT,
     status TEXT DEFAULT 'completed',
