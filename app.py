@@ -373,6 +373,12 @@ def init_session_state():
         st.session_state.ticket_input_mode = None  # None = show landing page
     if 'loaded_from_history' not in st.session_state:
         st.session_state.loaded_from_history = False
+    if 'refinement_prompt' not in st.session_state:
+        st.session_state.refinement_prompt = None
+    if 'trigger_refinement' not in st.session_state:
+        st.session_state.trigger_refinement = False
+    if 'refinement_history' not in st.session_state:
+        st.session_state.refinement_history = []
     
     # Scroll to top on page load
     st.markdown("""
@@ -1564,6 +1570,7 @@ def process_ticket(ticket: TicketInfo):
             
             st.session_state.final_state = final_state
             st.session_state.processing = False
+            st.session_state.refinement_history = []  # Clear refinement history for new generation
             
             progress_bar.progress(1.0)
             status_text.markdown("**✅ Processing Complete!**")
@@ -1646,7 +1653,7 @@ def display_results(state):
     st.divider()
     
     # Tabs for different views
-    tab1, tab2, tab3, tab4 = st.tabs(["QA Roadmap", "Test Cases", "Coverage Analysis", "Export & Sync"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["QA Roadmap", "Test Cases", "Coverage Analysis", "Export & Sync", "✨Refine Results"])
     
     with tab1:
         st.subheader("QA Roadmap by Category")
@@ -1884,6 +1891,205 @@ def display_results(state):
             with col2:
                 st.markdown("### 🔄 Sync to Jira/Azure DevOps")
                 st.info("Sync is only available for tickets fetched from live integrations (Jira/Azure DevOps).\n\nSample and custom tickets cannot be synced back.")
+    
+    with tab5:
+        st.subheader("Refine AI-Generated Results")
+        st.caption("Ask the AI to modify the generated test cases based on your feedback")
+        
+        # Quick action buttons
+        st.markdown("**Quick Actions:**")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("Reduce Test Cases", use_container_width=True, help="Ask AI to consolidate and reduce the number of test cases"):
+                st.session_state.refinement_prompt = f"Reduce the number of test cases from {len(state['test_cases'])} to approximately {max(5, len(state['test_cases']) // 2)} by consolidating similar test cases and removing redundant ones. Keep the most critical P0 and P1 test cases."
+                st.session_state.trigger_refinement = True
+                st.rerun()
+        
+        with col2:
+            if st.button("Focus on Critical Only", use_container_width=True, help="Keep only P0 and P1 priority test cases"):
+                st.session_state.refinement_prompt = "Keep only the P0 and P1 (high priority) test cases. Remove all P2 and P3 test cases."
+                st.session_state.trigger_refinement = True
+                st.rerun()
+        
+        with col3:
+            if st.button("Add More Edge Cases", use_container_width=True, help="Generate additional edge case test scenarios"):
+                st.session_state.refinement_prompt = "Add 5-10 more edge case and boundary condition test cases that weren't covered in the original generation."
+                st.session_state.trigger_refinement = True
+                st.rerun()
+        
+        st.divider()
+        
+        # Custom refinement prompt
+        st.markdown("**Custom Refinement:**")
+        custom_prompt = st.text_area(
+            "Describe how you'd like to modify the test cases:",
+            placeholder="Examples:\n- Focus more on security testing\n- Add performance test cases\n- Remove duplicate test cases for login functionality\n- Make test steps more detailed\n- Simplify the test cases for junior testers",
+            height=100,
+            key="custom_refinement_input"
+        )
+        
+        col_refine1, col_refine2, col_refine3 = st.columns([2, 1, 1])
+        
+        with col_refine1:
+            if st.button("✨ Refine Results", type="primary", disabled=not custom_prompt, use_container_width=True):
+                st.session_state.refinement_prompt = custom_prompt
+                st.session_state.trigger_refinement = True
+                st.rerun()
+        
+        with col_refine2:
+            if st.button("Regenerate All", type="secondary", use_container_width=True, help="Complete regeneration with different approach"):
+                st.session_state.refinement_prompt = "Regenerate all test cases with a fresh perspective. Use different test strategies and scenarios while maintaining the same quality and coverage."
+                st.session_state.trigger_refinement = True
+                st.rerun()
+        
+        # Process refinement if triggered
+        if st.session_state.get('trigger_refinement', False):
+            st.session_state.trigger_refinement = False
+            refinement_prompt = st.session_state.get('refinement_prompt', '')
+            
+            if refinement_prompt:
+                # Check API key
+                current_api_key = get_current_api_key()
+                if not current_api_key:
+                    st.error("⚠️ Please enter your Google Gemini API key in the sidebar to refine results.")
+                else:
+                    with st.spinner("🤖 AI is refining your test cases..."):
+                        try:
+                            # Call AI to refine the results
+                            genai.configure(api_key=current_api_key)
+                            model = genai.GenerativeModel(get_current_model())
+                            
+                            # Prepare context
+                            current_test_cases = state.get('test_cases', [])
+                            ticket_info = state.get('ticket_info', {})
+                            
+                            refinement_context = f"""You are a QA test refinement expert. You have a set of test cases that need to be refined based on user feedback.
+
+**Original Ticket:**
+- Title: {ticket_info.get('title', '')}
+- Type: {ticket_info.get('ticket_type', '')}
+- Description: {ticket_info.get('description', '')[:500]}...
+
+**Current Test Cases ({len(current_test_cases)} total):**
+"""
+                            for i, tc in enumerate(current_test_cases[:10], 1):  # Show first 10 as sample
+                                refinement_context += f"\n{i}. {tc.get('title', '')} (Priority: {tc.get('priority', 'P2')}, Category: {tc.get('category', '')})"
+                            
+                            if len(current_test_cases) > 10:
+                                refinement_context += f"\n... and {len(current_test_cases) - 10} more test cases"
+                            
+                            refinement_context += f"""
+
+**User's Refinement Request:**
+{refinement_prompt}
+
+**Instructions:**
+Based on the user's request, provide a refined list of test cases in JSON format. Return ONLY a JSON object with this structure:
+{{
+    "test_cases": [
+        {{
+            "title": "Test case title",
+            "priority": "P0|P1|P2|P3",
+            "category": "Happy Path|Negative|Edge Case|Regression|Integration|Performance|Security",
+            "preconditions": "Prerequisites",
+            "test_steps": ["Step 1", "Step 2", "Step 3"],
+            "expected_result": "Expected outcome",
+            "test_data": "Test data if applicable"
+        }}
+    ],
+    "changes_summary": "Brief summary of what was changed and why"
+}}
+
+Ensure the refined test cases:
+1. Address the user's specific request
+2. Maintain proper test case structure
+3. Keep priorities aligned with criticality
+4. Preserve essential coverage
+"""
+                            
+                            response = model.generate_content(refinement_context)
+                            response_text = response.text.strip()
+                            
+                            # Extract JSON from response
+                            import json
+                            import re
+                            
+                            # Try to extract JSON from markdown code blocks
+                            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response_text, re.DOTALL)
+                            if json_match:
+                                response_text = json_match.group(1)
+                            
+                            refined_data = json.loads(response_text)
+                            
+                            # Update the state with refined test cases
+                            if 'test_cases' in refined_data:
+                                st.session_state.final_state['test_cases'] = refined_data['test_cases']
+                                st.session_state.final_state['total_test_cases'] = len(refined_data['test_cases'])
+                                
+                                # Track refinement in history
+                                changes_summary = refined_data.get('changes_summary', 'Test cases updated')
+                                st.session_state.refinement_history.append(f"{refinement_prompt[:50]}... → {changes_summary}")
+                                
+                                # Save refined version to database
+                                try:
+                                    db = DatabaseManager()
+                                    generation_id = db.save_generation(st.session_state.final_state)
+                                    st.session_state.current_generation_id = generation_id
+                                except:
+                                    pass
+                                
+                                st.success(f"✅ Results refined! {refined_data.get('changes_summary', 'Test cases updated.')}")
+                                st.info(f"📊 New total: {len(refined_data['test_cases'])} test cases")
+                                st.rerun()
+                            else:
+                                st.error("❌ Failed to parse refined results")
+                        
+                        except Exception as e:
+                            st.error(f"❌ Refinement failed: {str(e)}")
+                            st.error("Please try again with a different refinement request.")
+        
+        st.divider()
+        
+        # Show refinement history
+        if 'refinement_history' not in st.session_state:
+            st.session_state.refinement_history = []
+        
+        if st.session_state.refinement_history:
+            with st.expander("📜 Refinement History", expanded=False):
+                for i, hist in enumerate(reversed(st.session_state.refinement_history[-5:]), 1):
+                    parts = hist.split(' → ')
+                    if len(parts) == 2:
+                        st.markdown(f"**{i}. Request:** {parts[0]}")
+                        
+                        # Format the result with proper line breaks
+                        result_text = parts[1]
+                        
+                        # Split on numbered points like "1)", "2)", etc.
+                        import re
+                        sentences = re.split(r'(\d+\))', result_text)
+                        
+                        formatted_result = ""
+                        for j, sentence in enumerate(sentences):
+                            if re.match(r'\d+\)', sentence):
+                                # This is a number marker
+                                formatted_result += f"\n   {sentence} "
+                            elif sentence.strip():
+                                # This is the text following the number
+                                formatted_result += sentence.strip()
+                        
+                        # If no numbered points found, just display as is but split long text
+                        if not re.search(r'\d+\)', result_text):
+                            formatted_result = result_text
+                        
+                        st.markdown(f"   **Result:** {formatted_result.strip()}")
+                        
+                        if i < len(st.session_state.refinement_history[-5:]):
+                            st.markdown("---")
+                    else:
+                        st.markdown(f"**{i}.** {hist}")
+                        if i < len(st.session_state.refinement_history[-5:]):
+                            st.markdown("---")
 
 
 def main():
@@ -1915,6 +2121,7 @@ def main():
             st.session_state.final_state = None
             st.session_state.selected_ticket = None
             st.session_state.ticket_input_mode = None
+            st.session_state.refinement_history = []
             st.rerun()
         
         st.markdown("---")
