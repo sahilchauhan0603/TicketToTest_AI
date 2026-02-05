@@ -193,9 +193,9 @@ Built for the **Veersa** Agentic AI Hackathon.
 
 ## 📞 Contact
 
-**Team:** QualityOps
-**Live:** https://ticket-to-test-ai.streamlit.app 
-**Repository:** https://github.com/sahilchauhan0603/TicketToTest_AI
+- **Team:** QualityOps
+- **Live:** https://ticket-to-test-ai.streamlit.app 
+- **Repository:** https://github.com/sahilchauhan0603/TicketToTest_AI
 
 ---
 
