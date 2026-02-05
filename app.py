@@ -379,6 +379,10 @@ def init_session_state():
         st.session_state.trigger_refinement = False
     if 'refinement_history' not in st.session_state:
         st.session_state.refinement_history = []
+    if 'refining_in_progress' not in st.session_state:
+        st.session_state.refining_in_progress = False
+    if 'refinement_cancelled' not in st.session_state:
+        st.session_state.refinement_cancelled = False
     
     # Scroll to top on page load
     st.markdown("""
@@ -1932,13 +1936,26 @@ def display_results(state):
         col_refine1, col_refine2, col_refine3 = st.columns([2, 1, 1])
         
         with col_refine1:
-            if st.button("✨ Refine Results", type="primary", disabled=not custom_prompt, use_container_width=True):
-                st.session_state.refinement_prompt = custom_prompt
-                st.session_state.trigger_refinement = True
-                st.rerun()
+            if not st.session_state.refining_in_progress:
+                if st.button("✨ Refine Results", type="primary", disabled=not custom_prompt, use_container_width=True):
+                    st.session_state.refinement_prompt = custom_prompt
+                    st.session_state.trigger_refinement = True
+                    st.rerun()
+            else:
+                # Show processing indicator
+                st.markdown("""
+                <div style='text-align: center; padding: 0.5rem; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 4px; margin-bottom: 0.5rem;'>
+                    <p style='margin: 0; color: white; font-weight: 600;'>🤖 AI is refining your test cases...</p>
+                </div>
+                """, unsafe_allow_html=True)
+                if st.button("⏹️ Cancel Refinement", type="secondary", use_container_width=True):
+                    st.session_state.refinement_cancelled = True
+                    st.session_state.refining_in_progress = False
+                    st.warning("⚠️ Refinement cancelled by user")
+                    st.rerun()
         
         with col_refine2:
-            if st.button("Regenerate All", type="secondary", use_container_width=True, help="Complete regeneration with different approach"):
+            if st.button("🔄 Regenerate All", type="secondary", use_container_width=True, help="Complete regeneration with different approach", disabled=st.session_state.refining_in_progress):
                 st.session_state.refinement_prompt = "Regenerate all test cases with a fresh perspective. Use different test strategies and scenarios while maintaining the same quality and coverage."
                 st.session_state.trigger_refinement = True
                 st.rerun()
@@ -1946,6 +1963,12 @@ def display_results(state):
         # Process refinement if triggered
         if st.session_state.get('trigger_refinement', False):
             st.session_state.trigger_refinement = False
+            st.session_state.refining_in_progress = True
+            st.session_state.refinement_cancelled = False
+            st.rerun()  # Force immediate rerun to show cancel button
+        
+        # Only process if we're in refining state and haven't been cancelled
+        if st.session_state.refining_in_progress and not st.session_state.refinement_cancelled:
             refinement_prompt = st.session_state.get('refinement_prompt', '')
             
             if refinement_prompt:
@@ -1953,6 +1976,7 @@ def display_results(state):
                 current_api_key = get_current_api_key()
                 if not current_api_key:
                     st.error("⚠️ Please enter your Google Gemini API key in the sidebar to refine results.")
+                    st.session_state.refining_in_progress = False
                 else:
                     with st.spinner("🤖 AI is refining your test cases..."):
                         try:
@@ -2039,15 +2063,26 @@ Ensure the refined test cases:
                                 except:
                                     pass
                                 
-                                st.success(f"✅ Results refined! {refined_data.get('changes_summary', 'Test cases updated.')}")
-                                st.info(f"📊 New total: {len(refined_data['test_cases'])} test cases")
+                                # Check if cancelled during processing
+                                if st.session_state.refinement_cancelled:
+                                    st.session_state.refining_in_progress = False
+                                    st.warning("⚠️ Refinement was cancelled")
+                                else:
+                                    st.session_state.refining_in_progress = False
+                                    st.success(f"✅ Results refined! {refined_data.get('changes_summary', 'Test cases updated.')}")
+                                    st.info(f"📊 New total: {len(refined_data['test_cases'])} test cases")
                                 st.rerun()
                             else:
+                                st.session_state.refining_in_progress = False
                                 st.error("❌ Failed to parse refined results")
                         
                         except Exception as e:
-                            st.error(f"❌ Refinement failed: {str(e)}")
-                            st.error("Please try again with a different refinement request.")
+                            st.session_state.refining_in_progress = False
+                            if st.session_state.refinement_cancelled:
+                                st.warning("⚠️ Refinement was cancelled")
+                            else:
+                                st.error(f"❌ Refinement failed: {str(e)}")
+                                st.error("Please try again with a different refinement request.")
         
         st.divider()
         
