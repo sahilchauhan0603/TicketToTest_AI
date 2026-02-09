@@ -110,7 +110,7 @@ Six specialized agents working autonomously in sequence:
 
 ## 🚀 Quick Start
 
-For installation and setup instructions, see [INSTALLATION.md](INSTALLATION.md).
+For installation and setup instructions, see [INSTALLATION.md](./DOCUMENTATION/INSTALLATION.md).
 
 ---
 
