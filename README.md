@@ -8,7 +8,7 @@
 
 ## 🎯 Overview
 
-**Ticket-to-Test AI** is a production-ready agentic system that transforms manual QA test case writing into an automated, intelligent process. Using six specialized AI agents orchestrated by LangGraph, it analyzes tickets and generates comprehensive test cases with 90% time savings.
+**Ticket-to-Test AI** is a production-ready agentic system that transforms manual QA test case writing into an automated, intelligent process. Using five specialized AI agents orchestrated by LangGraph, it analyzes tickets and generates comprehensive test cases with 90% time savings.
 
 ### The Problem
 QA teams waste **40-70% of their time** on manual test case writing:
@@ -21,7 +21,7 @@ QA teams waste **40-70% of their time** on manual test case writing:
 **Result:** Slower releases, production bugs, and $20B wasted annually across the industry.
 
 ### Our Solution
-**One-click transformation:** Ticket → 6 AI Agents → Complete Test Suite
+**One-click transformation:** Ticket → 5 AI Agents → Complete Test Suite
 
 **What you get in 4-5 minutes:**
 1. **QA Execution Roadmap** - Categorized test scenarios (Happy Path, Negative, Edge Cases, Regression)
@@ -33,7 +33,7 @@ QA teams waste **40-70% of their time** on manual test case writing:
 
 ## 🤖 Agentic Architecture
 
-Six specialized agents working autonomously in sequence:
+Five specialized agents working autonomously in sequence:
 
 ```
 ┌─────────────────────┐
@@ -56,10 +56,12 @@ Six specialized agents working autonomously in sequence:
 │  Coverage Auditor   │ ← Validates coverage & finds gaps
 └──────────┬──────────┘
            ↓
-┌─────────────────────┐
-│  Sync Agent         │ ← Posts results to Jira/ADO
-└─────────────────────┘
+      ┌────────┐
+      │  END   │
+      └────────┘
 ```
+
+*(Sync Agent for auto-posting to Jira/ADO available - planned for integration)*
 
 **Why This Is Truly Agentic:**
 - ✅ **Autonomous Decisions** - Each agent makes context-based decisions
@@ -76,8 +78,8 @@ Six specialized agents working autonomously in sequence:
 - **LLM:** Google Gemini 2.0 Flash (structured outputs)
 - **UI:** Streamlit (interactive demo)
 - **Export:** openpyxl (professional Excel formatting)
-- **Integrations:** Jira API, Azure DevOps API (planned)
-- **Storage:** SQLite (versioning & audit trail - planned)
+- **Integrations:** Jira API, Azure DevOps API
+- **Storage:** SQLite (versioning & audit trail - implemented)
 
 **Architecture Highlights:**
 - Modular agent design (easy to customize)
@@ -170,6 +172,14 @@ Live Integration** - Fetch tickets directly from Jira or Azure DevOps
 - **Enterprise SaaS** - Complex integration scenarios
 
 ---
+
+## 🗺️ Roadmap
+
+### 🎯 Immediate (Next Release)
+- **Sync Agent Integration** - Wire into LangGraph workflow for auto-posting results to tickets
+- Webhook monitoring for automatic test case regeneration on ticket updates
+- Team management and user authentication
+- Custom test case templates per organization
 
 ### 🔮 Future (3-6 months)
 - Test execution automation (Selenium/Playwright)

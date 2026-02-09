@@ -101,10 +101,16 @@ python --version
    ```
 3. In app → "Live Integration" tab → Select Azure DevOps → Enter work item ID (e.g., `12345`)
 
-**Sync Results Back:**
+**Sync Results Back (Manual):**
 - After generating test cases, go to "Export & Sync" tab
 - Choose options: post comment, attach Excel, create subtasks
 - Click "Sync to Ticket System"
+- *Note: Automatic sync via integrated Sync Agent is planned for next release*
+
+**Version History:**
+- All test generations are automatically saved to SQLite database
+- Access previous generations through the "History" tab
+- View audit trails and regenerate from saved tickets
 
 ---
 
