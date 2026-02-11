@@ -31,6 +31,22 @@ QA teams waste **40-70% of their time** on manual test case writing:
 
 ---
 
+## 🚀 Quick Start
+
+For installation and setup instructions, see [INSTALLATION.md](./DOCUMENTATION/INSTALLATION.md).
+
+---
+
+## 📺 For Judges & Reviewers
+
+**All presentation materials are available in the [`DOCUMENTATION/`](./DOCUMENTATION/) folder:**
+
+- 📊 **Presentation Slides** (PPT/PDF)
+- 🎥 **Demo Video**
+- 🛠️ **Installation Instructions**
+
+---
+
 ## 🤖 Agentic Architecture
 
 Five specialized agents working autonomously in sequence:
@@ -110,12 +126,6 @@ Five specialized agents working autonomously in sequence:
 
 ---
 
-## 🚀 Quick Start
-
-For installation and setup instructions, see [INSTALLATION.md](./DOCUMENTATION/INSTALLATION.md).
-
----
-
 ## 📁 Project Structure
 
 ```
@@ -173,15 +183,12 @@ Live Integration** - Fetch tickets directly from Jira or Azure DevOps
 
 ---
 
-## 🗺️ Roadmap
+## 🗺️ Future Scope
 
-### 🎯 Immediate (Next Release)
 - **Sync Agent Integration** - Wire into LangGraph workflow for auto-posting results to tickets
 - Webhook monitoring for automatic test case regeneration on ticket updates
 - Team management and user authentication
 - Custom test case templates per organization
-
-### 🔮 Future (3-6 months)
 - Test execution automation (Selenium/Playwright)
 - Integration with Xray, Zephyr, TestRail
 - AI-powered test maintenance
