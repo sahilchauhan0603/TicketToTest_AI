@@ -41,7 +41,7 @@ For installation and setup instructions, see [INSTALLATION_GUIDE.md](./DOCUMENTA
 
 **All presentation materials are available in the [`DOCUMENTATION`](./DOCUMENTATION/) folder:**
 
-- 📊 **Presentation Slides** - [Pitch Deck (PPT)](./DOCUMENTATION/Ticket-to-Test%20AI_%20Pitch%20Deck.pptx)
+- 📊 **Presentation Slides** - [Pitch Deck (PPT)](./DOCUMENTATION/Ticket-to-Test%20AI_%20Pitch%20Deck.pptx) | [View Online](https://veersalabs-my.sharepoint.com/:p:/g/personal/sahil_chauhan_veersatech_com/IQAZ8UhnUCPHTpVKrdpRLFAPARU3_ED5cOLpst49xE0hMkA?e=CSxmCG)
 - 📊 **Presentation Slides** - [Pitch Deck (PDF)](./DOCUMENTATION/Ticket-to-Test%20AI_%20Pitch%20Deck.pdf)
 - 📋 **Sample Excel Output** - [Generated Test Cases](./DOCUMENTATION/TestCases_KAN-2_20260204_001836.xlsx) *(See the actual Excel format produced by the system)*
 - 🛠️ **Installation Instructions** - [Setup Guide](./DOCUMENTATION/INSTALLATION_GUIDE.md)

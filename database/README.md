@@ -4,6 +4,12 @@
 
 **File:** `ticket_test.db` (auto-created on first run)
 
+⚠️ **Important:** The database is **LOCAL** to each environment:
+- Your laptop has its own database
+- The deployed Streamlit app has its own database
+- Your friend's laptop has its own database
+- **They DON'T sync** - each is independent
+
 TicketToTest AI uses SQLite to store:
 - 📊 **Generations** - Each test generation session (ticket info, timestamp, Excel path)
 - ✅ **Test Cases** - All generated test cases (title, priority, category, steps)
