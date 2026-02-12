@@ -6,7 +6,6 @@ This directory stores generated test case files.
 
 - Excel files with test cases (.xlsx)
 - JSON exports of agent state
-- Audit logs
 
 ## Files Generated
 
@@ -36,3 +35,4 @@ Each Excel file contains:
    - Identified gaps
    - Clarification questions
 
+- 📋 **Sample Excel Output** - [Generated Test Cases](./DOCUMENTATION/TestCases_KAN-2_20260204_001836.xlsx) *(See the actual Excel format produced by the system)*

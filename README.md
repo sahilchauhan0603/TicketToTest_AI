@@ -33,17 +33,19 @@ QA teams waste **40-70% of their time** on manual test case writing:
 
 ## 🚀 Quick Start
 
-For installation and setup instructions, see [INSTALLATION.md](./DOCUMENTATION/INSTALLATION.md).
+For installation and setup instructions, see [INSTALLATION_GUIDE.md](./DOCUMENTATION/INSTALLATION_GUIDE.md).
 
 ---
 
 ## 📺 For Judges & Reviewers
 
-**All presentation materials are available in the [`DOCUMENTATION/`](./DOCUMENTATION/) folder:**
+**All presentation materials are available in the [`DOCUMENTATION`](./DOCUMENTATION/) folder:**
 
-- 📊 **Presentation Slides** (PPT/PDF)
-- 🎥 **Demo Video**
-- 🛠️ **Installation Instructions**
+- 📊 **Presentation Slides** - [Pitch Deck (PPT)](./DOCUMENTATION/Ticket-to-Test%20AI_%20Pitch%20Deck.pptx)
+- 📊 **Presentation Slides** - [Pitch Deck (PDF)](./DOCUMENTATION/Ticket-to-Test%20AI_%20Pitch%20Deck.pdf)
+- 📋 **Sample Excel Output** - [Generated Test Cases](./DOCUMENTATION/TestCases_KAN-2_20260204_001836.xlsx) *(See the actual Excel format produced by the system)*
+- 🛠️ **Installation Instructions** - [Setup Guide](./DOCUMENTATION/INSTALLATION_GUIDE.md)
+- 🎥 **Demo Video** - *Coming soon*
 
 ---
 
@@ -95,7 +97,7 @@ Five specialized agents working autonomously in sequence:
 - **UI:** Streamlit (interactive demo)
 - **Export:** openpyxl (professional Excel formatting)
 - **Integrations:** Jira API, Azure DevOps API
-- **Storage:** SQLite (versioning & audit trail - implemented)
+- **Storage:** SQLite (versioning & audit trail - [docs](./database/README.md))
 
 **Architecture Highlights:**
 - Modular agent design (easy to customize)
@@ -146,6 +148,12 @@ TicketToTest_AI/
 │   ├── jira_integration.py   # Jira Cloud/Server
 │   ├── azure_devops_integration.py  # Azure DevOps
 │   └── manager.py            # Integration factory
+├── database/                  # SQLite storage & versioning
+│   ├── __init__.py
+│   ├── db_manager.py         # Database operations
+│   ├── models.py             # Data models
+│   ├── schema.sql            # Database schema
+│   └── README.md             # Database documentation
 ├── utils/
 │   ├── __init__.py
 │   ├── excel_exporter.py     # Professional Excel generation

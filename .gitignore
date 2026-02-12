@@ -22,6 +22,7 @@ outputs/*.json
 # Database
 *.db
 *.sqlite
+view_database.py
 
 # Logs
 *.log
