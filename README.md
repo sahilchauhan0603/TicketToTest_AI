@@ -45,7 +45,7 @@ For installation and setup instructions, see [INSTALLATION_GUIDE.md](./DOCUMENTA
 - 📊 **Presentation Slides** - [Pitch Deck (PDF)](./DOCUMENTATION/Ticket-to-Test%20AI_%20Pitch%20Deck.pdf)
 - 📋 **Sample Excel Output** - [Generated Test Cases](./DOCUMENTATION/TestCases_KAN-2_20260204_001836.xlsx) *(See the actual Excel format produced by the system)*
 - 🛠️ **Installation Instructions** - [Setup Guide](./DOCUMENTATION/INSTALLATION_GUIDE.md)
-- 🎥 **Demo Video** - *Coming soon*
+- 🎥 **Demo Video** - *soon*
 
 ---
 
