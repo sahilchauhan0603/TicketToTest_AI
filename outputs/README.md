@@ -35,4 +35,6 @@ Each Excel file contains:
    - Identified gaps
    - Clarification questions
 
-- 📋 **Sample Excel Output** - [Generated Test Cases](./DOCUMENTATION/TestCases_KAN-2_20260204_001836.xlsx) *(See the actual Excel format produced by the system)*
+## Sample Output
+
+📋 **Example Generated File:** [TestCases_KAN-2_20260204_001836.xlsx](../DOCUMENTATION/TestCases_KAN-2_20260204_001836.xlsx)

@@ -105,7 +105,7 @@ python --version
 - After generating test cases, go to "Export & Sync" tab
 - Choose options: post comment, attach Excel, create subtasks
 - Click "Sync to Ticket System"
-- *Note: Automatic sync via integrated Sync Agent is planned for next release*
+- *Note: Automatic sync via integrated Sync Agent is planned for future*
 
 **Version History:**
 - All test generations are automatically saved to SQLite database
@@ -217,23 +217,3 @@ icacls outputs
 UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14
 ```
 **This is harmless** - the app will work fine. Some dependencies still use Pydantic V1 internally. To eliminate the warning, use Python 3.12 instead of 3.14.
-
----
-
-## Support & Resources
-
-### Documentation
-- LangGraph: https://langchain-ai.github.io/langgraph/
-- Google AI API: https://ai.google.dev/docs
-- Streamlit: https://docs.streamlit.io
-
-### Community
-- LangChain Discord
-- Streamlit Forum
-- r/QualityAssurance (Reddit)
-
-### Getting Help
-- Check console output for detailed errors
-- Review `agent_logs` in the results
-- Ensure Python 3.9+ is being used
-- Verify API key is valid and has credits
