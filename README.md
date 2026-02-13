@@ -1,6 +1,6 @@
 # Ticket-to-Test AI
 
-🚀 **[Live Demo](https://ticket-to-test-ai.streamlit.app/)** | 🎥 **[Demo Video](https://drive.google.com/file/d/1Zl7xHkPAn3VaAUl_aUyvGRdnxm9wnz88/view?usp=sharing)**
+**[Deployed Link](https://ticket-to-test-ai.streamlit.app/)** | **[Demo Video](https://drive.google.com/file/d/1Zl7xHkPAn3VaAUl_aUyvGRdnxm9wnz88/view?usp=sharing)**
 
 **Agentic QA Copilot for Jira / Azure DevOps**
 
