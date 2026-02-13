@@ -1,4 +1,4 @@
-# Ticket-to-Test AI
+# Ticket-to-Test AI [Live](https://ticket-to-test-ai.streamlit.app/) [Demo Video](https://drive.google.com/file/d/1Zl7xHkPAn3VaAUl_aUyvGRdnxm9wnz88/view?usp=sharing)
 
 **Agentic QA Copilot for Jira / Azure DevOps**
 
@@ -41,11 +41,11 @@ For installation and setup instructions, see [INSTALLATION_GUIDE.md](./DOCUMENTA
 
 **All presentation materials are available in the [`DOCUMENTATION`](./DOCUMENTATION/) folder:**
 
+- 🎥 **Demo Video** - [Watch Demo](https://drive.google.com/file/d/1Zl7xHkPAn3VaAUl_aUyvGRdnxm9wnz88/view?usp=sharing) *(Google Drive - Full System Walkthrough)*
 - 📊 **Presentation Slides** - [Pitch Deck (PPT)](./DOCUMENTATION/Ticket-to-Test%20AI_%20Pitch%20Deck.pptx) | [View Online](https://veersalabs-my.sharepoint.com/:p:/g/personal/sahil_chauhan_veersatech_com/IQAZ8UhnUCPHTpVKrdpRLFAPARU3_ED5cOLpst49xE0hMkA?e=CSxmCG)
 - 📊 **Presentation Slides** - [Pitch Deck (PDF)](./DOCUMENTATION/Ticket-to-Test%20AI_%20Pitch%20Deck.pdf)
 - 📋 **Sample Excel Output** - [Generated Test Cases](./DOCUMENTATION/TestCases_KAN-2_20260204_001836.xlsx) *(See the actual Excel format produced by the system)*
 - 🛠️ **Installation Instructions** - [Setup Guide](./DOCUMENTATION/INSTALLATION_GUIDE.md)
-- 🎥 **Demo Video** - *Coming soon...*
 
 ---
 
